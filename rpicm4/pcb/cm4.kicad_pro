@@ -55,9 +55,9 @@
           "width": 0.0
         },
         {
-          "gap": 0.2,
+          "gap": 0.0,
           "via_gap": 0.0,
-          "width": 0.2
+          "width": 0.0
         }
       ],
       "drc_exclusions": [],
@@ -393,7 +393,7 @@
   },
   "sheets": [
     [
-      "f1f6b397-25a0-414d-8ea0-d5c425253aa4",
+      "be33c42b-1681-4d5f-9e40-da00faf7ba38",
       ""
     ]
   ],
