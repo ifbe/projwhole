@@ -33,9 +33,9 @@
         "other_text_thickness": 0.15,
         "other_text_upright": false,
         "pads": {
-          "drill": 0.0,
-          "height": 1.15,
-          "width": 0.3
+          "drill": 1.0,
+          "height": 1.7,
+          "width": 1.7
         },
         "silk_line_width": 0.15,
         "silk_text_italic": false,
@@ -55,9 +55,9 @@
           "width": 0.0
         },
         {
-          "gap": 0.0,
+          "gap": 0.2,
           "via_gap": 0.0,
-          "width": 0.0
+          "width": 0.2
         }
       ],
       "drc_exclusions": [],
@@ -393,7 +393,7 @@
   },
   "sheets": [
     [
-      "be33c42b-1681-4d5f-9e40-da00faf7ba38",
+      "011cd925-56da-458c-addf-07d1e105ed87",
       ""
     ]
   ],
