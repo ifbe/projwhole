@@ -1,0 +1,132 @@
+cm4{
+28,pwm1
+31:pwm0
+51:rx
+55:tx
+77:vcc
+79:vcc
+81:vcc
+83:vcc
+85:vcc
+87:vcc
+78:3v3
+84:3v3
+86:3v3
+88:1v8
+90:1v8
+94:ana0
+96:ana1
+21:actled
+95:pwrled
+93:nRPIBOOT
+99:eGLOBAL
+101:usb_otg
+103:usb_N
+105:usb_P
+}
+
+
+typec_l{
+a4,vbus:vcc
+a1,gnd:gnd
+s1,shield:gnd
+}
+
+
+typec_r{
+a4,vbus:vcc
+a1,gnd:gnd
+s1,shield:gnd
+a5,cc1:cc1
+b5,cc2:cc2
+a7,d-:usb_N
+b7,d-:usb_N
+a6,d+:usb_P
+b6,d+:usb_P
+}
+
+
+cclogic{
+	conn_1x2_hi1{
+	1:vcc
+	2:tmphi1
+	}
+	conn_1x2_hi2{
+	1:vcc
+	2:tmphi2
+	}
+	conn_1x2_lo1{
+	1:tmplo1
+	2:gnd
+	}
+	conn_1x2_lo2{
+	1:tmplo2
+	2:gnd
+	}
+	r_hi1{
+	val=22k
+	1:tmphi1
+	2:cc1
+	}
+	r_hi2{
+	val=22k
+	1:tmphi2
+	2:cc2
+	}
+	r_lo1{
+	val=5.1k
+	1:tmplo1
+	2:cc1
+	}
+	r_lo2{
+	val=5.1k
+	1:tmplo2
+	2:cc2
+	}
+}
+
+
+conn_1x4_0{
+1:tx
+2:rx
+3:pwm0
+4:pwm1
+}
+
+
+conn_1x4_1{
+1:gnd
+2:1v8
+3:3v3
+4:vcc
+}
+
+
+conn_1x4_2{
+1:ana0
+2:ana1
+3:pwrled
+4:actled
+}
+
+
+conn_1x2_0{
+1:eGLOBAL
+2:gnd
+}
+
+
+conn_1x2_1{
+1:nRPIBOOT
+2:gnd
+}
+
+
+conn_1x2_2{
+1:usb_otg
+2:gnd
+}
+
+
+conn_1x2_3{
+}
