@@ -1,0 +1,3 @@
+(sym_lib_table
+  (lib (name "drv8305")(type "KiCad")(uri "${KIPRJMOD}/schlib/drv8305.kicad_sym")(options "")(descr ""))
+)
