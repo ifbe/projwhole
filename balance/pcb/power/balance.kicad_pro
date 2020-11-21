@@ -301,7 +301,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "dog.kicad_pro",
+    "filename": "balance.kicad_pro",
     "version": 1
   },
   "net_settings": {
@@ -370,7 +370,7 @@
   },
   "sheets": [
     [
-      "11182a30-0fd9-4772-bc36-2a200867dc3c",
+      "a47a6b08-403f-4a05-885a-b25b7eb36366",
       ""
     ]
   ],

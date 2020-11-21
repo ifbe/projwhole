@@ -1,3 +1,9 @@
-output/
-dog-backups/
-fp-info-cache
+power/output/
+power/balance-backups/
+power/fp-info-cache
+esp32/output/
+esp32/esp32-backups/
+esp32/fp-info-cache
+stm32/output/
+stm32/stm32-backups/
+stm32/fp-info-cache
