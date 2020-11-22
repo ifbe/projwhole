@@ -22,13 +22,14 @@ difference(){
     translate([  0,25,0])cube([98,48,51],center=true);
 */
     //--------------------- y=0 --------------------
-    translate([  0,0,0])cube([50,50,100],center=true);
+    translate([  0,0,0])cube([100,25,25],center=true);
 
     //--------------------- y=-25 --------------------
     translate([  0,-25,0])cube([98,48,51],center=true);
 
     //--------------------- y=-50 --------------------
     translate([  0,-50,0])cube([140,25,18],center=true);
+    translate([  0,-50,0])cube([100,25,25],center=true);
 
     //--------------------- y=-75 -------------------
     translate([  0,-75,0])cube([98,48,51],center=true);
