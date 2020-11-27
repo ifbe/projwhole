@@ -1,40 +1,63 @@
 drv8825(flt,rst,slp,en,m0,m1,m2,step,dir)
-
 batt_xt60(vcc,gnd)
-
 mcu_2pin(3v3,gnd,m0,m1,m2,en,ldir,lstep,rdir,rstep)
 
-board{
-export(
-	3v3,gnd,
-	m0,m1,m2,en,
-	ldir,lstep,
-	rdir,rstep
-)
-import(
-	left8825: drv8825
-	right8825: drv8825
-	bat: batt_xt60
-	mcu: mcu_2pin
-)
-wiring(
-	12v@left8825.vmot, right8825.vmot, bat.vcc
-	gnd@left8825.gnd, right8825.gnd, bat.gnd, mcu.gnd
-	3v3@left8825.flt, left8825.rst, left8825.slp, right8825.flt, right8825.rst, right8825.slp, mcu.3v3
+main{
+import{
+		left8825: drv8825
+		right8825: drv8825
+		bat: batt_xt60
+		mcu: mcu_2pin
+}
+logicspace{
+	wire(
+		12v@left8825.vmot, right8825.vmot, bat.vcc
+		gnd@left8825.gnd, right8825.gnd, bat.gnd, mcu.gnd
+		3v3@left8825.flt, left8825.rst, left8825.slp, right8825.flt, right8825.rst, right8825.slp, mcu.3v3
 
-	en@left8825.en, right8825.en, mcu.en
-	m0@left8825.m0, right8825.m0, mcu.m0
-	m1@left8825.m1, right8825.m1, mcu.m1
-	m2@left8825.m2, right8825.m2, mcu.m2
+		en@left8825.en, right8825.en, mcu.en
+		m0@left8825.m0, right8825.m0, mcu.m0
+		m1@left8825.m1, right8825.m1, mcu.m1
+		m2@left8825.m2, right8825.m2, mcu.m2
 
-	lstep@left8825.step, mcu.lstep
-	ldir@left8825.dir, mcu.ldir
+		lstep@left8825.step, mcu.lstep
+		ldir@left8825.dir, mcu.ldir
 
-	rstep@right8825.step, mcu.rstep
-	rdir@right8825.dir, mcu.rdir
-)
-layout(
-	12v@(x,y,z),(x,y,z),(x,y,z); (x,y,z),(x,y,z); ...
-	gnd@...
-)
+		rstep@right8825.step, mcu.rstep
+		rdir@right8825.dir, mcu.rdir
+	)
+	wire_export(3v3,gnd,m0,m1,m2,en,ldir,lstep,rdir,rstep)
+}
+symbolspace{
+	chip(
+		left8825 $ breakoutboard @ (x,y,z)
+	)
+	wire(
+		12v@(x,y,z),(x,y,z),(x,y,z); (x,y,z),(x,y,z); ...
+		gnd@...
+	)
+}
+footprintspace{
+	chip(
+		left8825 $ _8x2_ @ (x,y,z)
+	)
+	wire(
+		12v@(x,y,z),(x,y,z),(x,y,z); (x,y,z),(x,y,z); ...
+		gnd@...
+	)
+	cut(
+	)
+	drill(
+	)
+}
+renderspace{
+	chip(
+	)
+	wire(
+	)
+	light(
+	)
+	camera(
+	)
+}
 }
