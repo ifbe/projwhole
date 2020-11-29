@@ -16,6 +16,7 @@ difference(){
     rotate([0, 90,0])translate([0, 75, 100])cylinder(10, r=11.2,center=true,$fn=50);
 
     //--------------------- y=50 --------------------
+    translate([  0,50  ,0])cube([50,2,51],center=true);
     translate([  0,50  ,0])cube([140,25,18],center=true);
     translate([  0,50+2,0])cube([100,6,30],center=true);
 
@@ -24,6 +25,7 @@ difference(){
 */
     //--------------------- y=0 --------------------
     //.center
+    translate([  0,0  ,0])cube([50,2,51],center=true);
     translate([  0,0  ,0])cube([80,20,30],center=true);
     translate([  0,0+2,0])cube([100,6,30],center=true);
     //.left
@@ -44,6 +46,7 @@ difference(){
 
     //--------------------- y=-50 --------------------
     //.center
+    translate([  0,-50  ,0])cube([50,2,51],center=true);
     translate([  0,-50  ,0])cube([80,20,30],center=true);
     translate([  0,-50+2,0])cube([100,6,30],center=true);
     //.left
