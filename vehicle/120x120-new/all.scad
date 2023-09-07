@@ -485,7 +485,7 @@ difference(){
 
 
 //for preview
-/*
+
 part5_rpi();
 part4_cam();
 part3_top();
@@ -498,12 +498,12 @@ part2_l298n();
 
 part1_dipan();
 part1_wheel();
-*/
+
 
 
 
 //for print
-part3_top();
+//part3_top();
 //rotate([-98,0,0])part4_cam();
 //part2_kuang_base1();
 //zhuomian();
