@@ -1,8 +1,8 @@
 module one(x,y){
     difference(){
-        translate([0,0,15/2])cube([20,20,15],center=true);
+        translate([0,0,20/2])cube([20,20,20],center=true);
 
-        translate([0,0,15/2+1])cylinder(15, r=9.4,center=true,$fn=50);
+        translate([0,0,20/2+1])cylinder(20, r=9.4,center=true,$fn=50);
         translate([0,0,0])cylinder(100, r=2.5,center=true,$fn=50);
 
         translate([+10,+10,0])cylinder(66, r=3,center=true,$fn=50);
