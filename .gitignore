@@ -3,3 +3,5 @@
 *.stl
 *.gcode
 *.3mf
+*.zip
+fp-info-cache

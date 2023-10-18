@@ -2,8 +2,8 @@ module kuangkuang(sizex, sizey, sizez){
     difference(){
     translate([0,0,sizez/2])cube([sizex+2,sizey+2,sizez],center=true);
     translate([0,0,sizez/2])cube([sizex+0.01,sizey+0.01,sizez+0.01],center=true);
-    translate([0,0,sizez/2])cube([sizex-8+0.01,sizey+2.01,sizez+0.01],center=true);
-    translate([0,0,sizez/2])cube([sizex+2.01,sizey-8+0.01,sizez+0.01],center=true);
+    translate([0,0,sizez/2])cube([sizex-4+0.01,sizey+2.01,sizez+0.01],center=true);
+    translate([0,0,sizez/2])cube([sizex+2.01,sizey-4+0.01,sizez+0.01],center=true);
     }
 }
 
@@ -790,7 +790,7 @@ module bot_top(){
     translate([-40,-20,-8])rotate([0,0,180])bezier(8);
 }
 
-module special_board()
+module special_board2()
 {
     //outer frame
     difference(){
@@ -877,6 +877,97 @@ module special_board()
     translate([0, 20-2,-2])cube([39.8,4,4],center=true);
 }
 
+module special_board_highhalf()
+{
+    //10 to 20
+    //translate([0,0,35])cube([40, 40, 10],center=true);
+    translate([0, 20-5,40-0.5])cube([40, 10, 1],center=true);
+    translate([0, 20-0.5,35])cube([40, 1, 10],center=true);
+    translate([0, 20-2,30+0.5])cube([40, 4, 1],center=true);
+
+    translate([0,-20+5,40-0.5])cube([40, 10, 1],center=true);
+    translate([0,-20+0.5,35])cube([40, 1, 10],center=true);
+    translate([0,-20+2,30+0.5])cube([40, 4, 1],center=true);
+
+    difference(){
+    translate([-15, 0,30+0.5])cube([30, 40, 1],center=true);
+    translate([-15, 0,30+0.5])cube([20, 20, 1.01],center=true);
+    }
+    translate([-15, 0,30])kuangkuang(28,20,10);
+
+    //0 to 10
+    translate([0,-20+3,30-0.5])cube([60, 6, 1],center=true);
+    difference(){
+        translate([0,-20+0.5,25])cube([60, 1, 10],center=true);
+        translate([0,-20,20])cube([10, 3, 10],center=true);
+    }
+    //translate([0,-20+4,20+0.5])cube([60, 8, 1],center=true);
+
+    translate([0, 20-3,30-0.5])cube([60, 6, 1],center=true);
+    difference(){
+        translate([0, 20-0.5,25])cube([60, 1, 10],center=true);
+        translate([0, 20,20])cube([10, 3, 10],center=true);
+    }
+    //translate([0, 20-3,20+0.5])cube([60, 6, 1],center=true);
+
+    //
+    translate([ 0,0,20])kuangkuang(23*2.54,11*2.54,10);
+    difference(){
+    translate([0, 0,20+0.5])cube([60, 40, 1],center=true);
+    translate([0, 0,20+0.5])cube([40, 30, 1.01],center=true);
+    translate([0, 0,20+0.5])cube([10, 40, 1.01],center=true);
+    }
+
+    //connector
+    //translate([-40+7.5/2, 3, 15])cube([7.5, 1.8, 10],center=true);
+    //translate([ 40-7.5/2, 3, 15])cube([7.5, 1.8, 10],center=true);
+}
+module special_board_lowhalf()
+{
+    //lower half
+    difference(){
+        union(){
+        translate([0, 20-7,10])cube([80, 14, 20],center=true);
+        translate([0,-20+4,10])cube([80, 8, 20],center=true);
+        //side
+        translate([-40+2.5, -3, 5])cube([5, 18, 10],center=true);
+        translate([ 40-2.5, -3, 5])cube([5, 18, 10],center=true);
+        //298n
+        translate([-40+7.5, 5, 15])cube([15, 2, 10],center=true);
+        translate([ 40-7.5, 5, 15])cube([15, 2, 10],center=true);
+        translate([-40+7.5, 1, 15])cube([15, 2, 10],center=true);
+        translate([ 40-7.5, 1, 15])cube([15, 2, 10],center=true);
+        }
+        //-battery
+        translate([0, 20,20])cube([10, 3, 10],center=true);
+        translate([0,-20,20])cube([10, 3, 10],center=true);
+        //.l298n backside
+        translate([0, 20-11,15])cube([78, 2.01, 10.01],center=true);
+        translate([0, 20-7,10.5])cube([78, 12, 19.01],center=true);
+        //.l298n frontside
+        translate([0,-20+11,15])cube([78, 2.01, 10.01],center=true);
+        translate([0,-20+4,10.5])cube([78, 6, 19.01],center=true);
+        translate([0,-20+11,2.5])cube([30, 2.01, 5.01],center=true);
+        //holes
+        translate([-27.5, 3, 20-6])rotate([90,0,0])cylinder(8, r=1.6,center=true,$fn=50);
+        translate([ 27.5, 3, 20-6])rotate([90,0,0])cylinder(8, r=1.6,center=true,$fn=50);
+        translate([-27.5, -20, 20-6])rotate([90,0,0])cylinder(2*10, r=2.5,center=true,$fn=50);
+        translate([ 27.5, -20, 20-6])rotate([90,0,0])cylinder(2*10, r=2.5,center=true,$fn=50);
+        translate([-27.5,  20, 20-6])rotate([90,0,0])cylinder(14*2, r=2.5,center=true,$fn=50);
+        translate([ 27.5,  20, 20-6])rotate([90,0,0])cylinder(14*2, r=2.5,center=true,$fn=50);
+    }
+
+
+    //fixer
+    translate([0,-20+2,-2])cube([39.8,4,4],center=true);
+    translate([0, 20-2,-2])cube([39.8,4,4],center=true);
+}
+module special_board()
+{
+    special_board_highhalf();
+    special_board_lowhalf();
+}
+
 /*
 module special_back(){
     difference(){
@@ -935,7 +1026,7 @@ module special()
     special_zhicheng();
 }
 */
-module special_bottom()
+module bot_bot_mid()
 {
     difference(){
     union(){
@@ -1002,12 +1093,12 @@ module special_bottom()
     translate([ 29/2,-5,5])cube([6, 10, 6], center=true);
 */
     //-l298n
-    translate([   0, -4, 0])cube([65, 2, 5],center=true);
-    translate([   28.5, -3+1.5, 0])cube([4, 3, 5],center=true);
-    translate([-29/2-12+3, -3+21/2, 0])cube([6.4, 21, 5],center=true);
-    translate([-29/2+12-3, -3+21/2, 0])cube([6.4, 21, 5],center=true);
-    translate([ 29/2-12+3, -3+21/2, 0])cube([6.4, 21, 5],center=true);
-    translate([ 29/2+12-3, -3+21/2, 0])cube([6.4, 21, 5],center=true);
+    translate([   0, -3, 0])cube([65, 2, 5],center=true);
+    translate([   28.5, -2+2, 0])cube([4, 4, 5],center=true);
+    translate([-29/2-12+3, -2+21/2, 0])cube([6.4, 21, 5],center=true);
+    translate([-29/2+12-3, -2+21/2, 0])cube([6.4, 21, 5],center=true);
+    translate([ 29/2-12+3, -2+21/2, 0])cube([6.4, 21, 5],center=true);
+    translate([ 29/2+12-3, -2+21/2, 0])cube([6.4, 21, 5],center=true);
 
     //-holes
     translate([ 10, 50,0])cylinder(100, r=1.6,center=true,$fn=50);
@@ -1077,7 +1168,7 @@ module special_bottom()
     }
 }
 module bot_bot(){
-    translate([0,0,-40])special_bottom();
+    translate([0,0,-40])bot_bot_mid();
 
     //left
     difference(){
@@ -1167,7 +1258,7 @@ color([0.5,0,0.5,0.8])bot_bot();
 
 //rotate([-98,0,0])top_cam();
 
-//rotate([0,180,0])top_bot();
+//top_bot();
 
 //mid_kuang_left();
 //mid_kuang_right();
