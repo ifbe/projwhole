@@ -151,15 +151,15 @@ module top_top(){
     }
 }
 
+module top_support_one(){
+    difference(){
+        conn(36,45);
+        translate([0,0,6])cube([40,24,2],center=true);
+    }
+}
 module top_support(){
-    translate([-50, 0, 60])rotate([0,90,0])difference(){
-        conn(36,45);
-        translate([0,0,5.01])cube([20,40.01,10],center=true);
-    }
-    translate([ 50, 0, 60])rotate([0,-90,0])difference(){
-        conn(36,45);
-        translate([0,0,5.01])cube([20,40.01,10],center=true);
-    }
+    translate([-50, 0, 60])rotate([0,90,0])top_support_one();
+    translate([ 50, 0, 60])rotate([0,-90,0])top_support_one();
 }
 
 module rpi(){
@@ -1259,11 +1259,11 @@ color([0.5,0,0.5,0.8])bot_bot();
 
 
 //--------for print--------
-rotate([-180,0,0])top_top();
+//rotate([-180,0,0])top_top();
 //rotate([-90,0,0])cam_mount();
 //rotate([0,-90,0])top_speaker_l();
 //top_mic();
-//top_support();
+//top_support_one();
 //top_bot();
 
 //mid_kuang_left();
@@ -1281,7 +1281,7 @@ difference(){
     translate([100,0,0])cube([200,200,100],center=true);
 }
 */
-//bot_bot();
+bot_bot();
 
 
 //--------for test--------
