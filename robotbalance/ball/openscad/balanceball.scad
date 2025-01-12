@@ -135,17 +135,17 @@ module basketball(){
 translate([0,0,-120])sphere(d=240, $fn=100);
 }
 
-/*
+
 //for preview
 translate([0,0,40])board();
 motorseat_four();
 //motor_x();
 wheel_x();
 basketball();
-*/
+
 
 /*
 */
 //for print
 //board();
-translate([-10,0,0])rotate([180,0,0])motorseat();
+//translate([-10,0,0])rotate([180,0,0])motorseat();

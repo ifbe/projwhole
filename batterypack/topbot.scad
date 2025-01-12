@@ -3,7 +3,7 @@ module one(x,y){
         translate([0,0,20/2])cube([20,20,20],center=true);
 
         //center hole: if(bad 3dprinter)r=9.4
-        translate([0,0,20/2+2])cylinder(20, r=9.2,center=true,$fn=50);
+        translate([0,0,20/2+2])cylinder(20, r=9.3,center=true,$fn=50);
         translate([0,0,0])cylinder(100, r=2.5,center=true,$fn=50);
 
         //4 corner
@@ -17,10 +17,10 @@ module one(x,y){
         //cube([8,21,2.01],center=true);
 
         //bottom xshape
-        rotate([0,0,45])translate([18,0,1])cube([20,5.4,2.01],center=true);
-        rotate([0,0,135])translate([18,0,1])cube([20,5.4,2.01],center=true);
-        rotate([0,0,225])translate([18,0,1])cube([20,5.4,2.01],center=true);
-        rotate([0,0,315])translate([18,0,1])cube([20,5.4,2.01],center=true);
+        rotate([0,0,45])translate([18,0,3/2])cube([20,5.4,3.01],center=true);
+        rotate([0,0,135])translate([18,0,3/2])cube([20,5.4,3.01],center=true);
+        rotate([0,0,225])translate([18,0,3/2])cube([20,5.4,3.01],center=true);
+        rotate([0,0,315])translate([18,0,3/2])cube([20,5.4,3.01],center=true);
 /*
         translate([0,0,2.0-0.3])cylinder(0.61, r=4,center=true,$fn=50);
         translate([0,0,0.8+0.3])cylinder(0.61, r=5,center=true,$fn=50);
@@ -47,8 +47,8 @@ translate([30,10,0])rotate([0,0,-90])one();
 translate([10,30,0])rotate([0,0,-90])one();
 translate([30,30,0])rotate([0,0,-90])one();
 }
-translate([ 20, 5+2,0.49])cube([32,10,1],center=true);
-translate([ 20,35-2,0.49])cube([32,10,1],center=true);
+translate([ 20, 5+2,0.49])cube([32,10, 1],center=true);
+translate([ 20,35-2,0.49])cube([32,10, 1],center=true);
 translate([ 5+2, 20,0.49])cube([10,32, 1],center=true);
 translate([35-2, 20,0.49])cube([10,32, 1],center=true);
 }
