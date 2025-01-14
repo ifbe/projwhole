@@ -1,112 +1,16 @@
-#include<Wire.h>
-#include<MPU6050.h>
+#include <Wire.h>
+#include <MPU6050.h>
+#include "mahony.h"
+#include "trajectory.h"
+#include "actuator.h"
 
 MPU6050 mpu;
 unsigned long oldtime;
-//
 float deltaT;
-#define twoKp 1.0
-#define twoKi 0.0001
-//
-static float q[4];
-#define qx q[0]
-#define qy q[1]
-#define qz q[2]
-#define qw q[3]
-//
-static float integralx, integraly, integralz;
 
 
 
 
-//origin code: https://github.com/PaulStoffregen/MahonyAHRS
-//axis system: east-north-sky
-//compute in: local space, not world space
-
-
-
-
-static float invSqrt(float x) {
-	float halfx = 0.5f * x;
-	float y = x;
-	long i = *(long*)&y;
-	i = 0x5f3759df - (i>>1);
-	y = *(float*)&i;
-	y = y * (1.5f - (halfx * y * y));
-	y = y * (1.5f - (halfx * y * y));
-	return y;
-}
-void mahonyupdate6(
-	float gx, float gy, float gz,
-	float ax, float ay, float az)
-{
-	float recipNorm;
-	float halfvx, halfvy, halfvz;
-	float halfex, halfey, halfez;
-
-	// Compute feedback only if accelerometer measurement valid
-	// (avoids NaN in accelerometer normalisation)
-	if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
-
-		// Normalise accelerometer measurement
-		recipNorm = invSqrt(ax * ax + ay * ay + az * az);
-		ax *= recipNorm;
-		ay *= recipNorm;
-		az *= recipNorm;
-
-		// Estimated direction of gravity
-		halfvx = qx * qz - qw * qy;
-		halfvy = qw * qx + qy * qz;
-		halfvz = qw*qw + qz*qz - 0.5f;  //=1.0-(x*x+y*y)-0.5=0.5-(x*x+y*y)
-
-		// Error is sum of cross product between estimated
-		// and measured direction of gravity
-		halfex = (ay * halfvz - az * halfvy);
-		halfey = (az * halfvx - ax * halfvz);
-		halfez = (ax * halfvy - ay * halfvx);
-
-		// Compute and apply integral feedback if enabled
-		if(twoKi > 0.0f) {
-			// integral error scaled by Ki
-			integralx += twoKi * halfex * deltaT;;
-			integraly += twoKi * halfey * deltaT;;
-			integralz += twoKi * halfez * deltaT;;
-			gx += integralx;	// apply integral feedback
-			gy += integraly;
-			gz += integralz;
-		} else {
-			integralx = 0.0f;	// prevent integral windup
-			integraly = 0.0f;
-			integralz = 0.0f;
-		}
-
-		// Apply proportional feedback
-		gx += twoKp * halfex;
-		gy += twoKp * halfey;
-		gz += twoKp * halfez;
-	}
-
-	// Integrate rate of change of quaternion
-	gx *= (0.5f * deltaT);		// pre-multiply common factors
-	gy *= (0.5f * deltaT);
-	gz *= (0.5f * deltaT);
-
-	float pw = qw;
-	float px = qx;
-	float py = qy;
-	float pz = qz;
-	qx += (  0 * px +gz * py -gy * pz +gx * pw);
-	qy += (-gz * px + 0 * py +gx * pz +gy * pw);
-	qz += ( gy * px -gx * py + 0 * px +gz * pw);
-	qw += (-gx * px -gy * py -gz * pz + 0 * pw);
-
-	// Normalise quaternion
-	recipNorm = invSqrt(qw * qw + qx * qx + qy * qy + qz * qz);
-	qw *= recipNorm;
-	qx *= recipNorm;
-	qy *= recipNorm;
-	qz *= recipNorm;
-}
 void quaternion2eulerian(float* rq, float* e)
 {
 	//atan2(2(xw+yz), 1-2(xx+yy))
@@ -122,19 +26,19 @@ void quaternion2eulerian(float* rq, float* e)
 	e[2] *= 180.0/PI;
 }
 
-
-
-
-void setup()
+void setled(int r, int g, int b)
 {
-  Serial.begin(115200);
-  Wire.begin(18, 17);  //SCL = 17, SDA = 18
-  mpu.initialize(ACCEL_FS::A2G, GYRO_FS::G1000DPS);
+  int lim = RGB_BRIGHTNESS>>1;
+  if(r > lim)r = lim;
+  if(g > lim)g = lim;
+  if(b > lim)b = lim;
+  rgbLedWrite(RGB_BUILTIN, r, g, b);
+}
 
-  qx = qy = qz = 0.0;
-  qw = 1.0;
-  integralx = integraly = integralz = 0.0;
-  oldtime = millis();
+void val2led(float val)
+{
+  if(val>0)setled(val, 0, 0);
+  else setled(0, 0, -val);
 }
 
 void loop()
@@ -157,17 +61,35 @@ void loop()
 
   deltaT = (ms-oldtime)*0.001;
   oldtime = ms;
-  mahonyupdate6(fgx, fgy, fgz, fax, fay, faz);
-  printf("q=(%f,%f,%f,%f)\n", qx, qy, qz, qw);
-/*
-  float rq[4];
+  mahony_update6(fgx, fgy, fgz, fax, fay, faz, deltaT);
+
+  float q[4];
+  mahony_getq(q);
+  //printf("%f,%f,%f,%f\n", q[0], q[1], q[2], q[3]);
+
   float e[3];
-  rq[0] = qx;
-  rq[1] = qy;
-  rq[2] = qz;
-  rq[3] = qw;
-  quaternion2eulerian(rq, e);
-  printf("e=(%f,%f,%f)\n", e[0], e[1], e[2]);
+  quaternion2eulerian(q, e);
+  printf("%f,%f,%f\n", e[0], e[1], e[2]);
+/*
+  float vec[3];
+  computeforce(q, vec);
+  float len = sqrt(vec[0]*vec[0]+vec[1]*vec[1]);
+  Serial.printf("%f,%f,%f,%f\n", vec[0], vec[1], vec[2], len);
+  val2led(vec[1]*90*2/PI);
 */
-  //printf("a=(%f,%f,%f) x=(%f,%f,%f)\n", fax, fay, faz, qx * qz - qw * qy, qw * qx + qy * qz, qw*qw + qz*qz - 0.5f);
+}
+
+void setup()
+{
+  //led.init();   //no need
+
+  Serial.begin(115200);
+
+  Wire.begin(18, 17);  //SCL = 17, SDA = 18
+
+  mpu.initialize(ACCEL_FS::A2G, GYRO_FS::G1000DPS);
+
+  mahony_init();
+
+  oldtime = millis();
 }
