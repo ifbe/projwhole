@@ -1,7 +1,7 @@
 #include <Wire.h>
 #include <MPU6050.h>
 #include "mahony.h"
-#include "trajectory.h"
+#include "planner.h"
 #include "actuator.h"
 
 MPU6050 mpu;
@@ -10,21 +10,6 @@ float deltaT;
 
 
 
-
-void quaternion2eulerian(float* rq, float* e)
-{
-	//atan2(2(xw+yz), 1-2(xx+yy))
-	e[0] = atan2( (rq[0]*rq[3]+rq[1]*rq[2])*2 , 1-(rq[0]*rq[0]+rq[1]*rq[1])*2 );
-	e[0] *= 180.0/PI;
-
-	//asin(2(yw-xz))
-	e[1] = asin(  (rq[1]*rq[3]-rq[0]*rq[2])*2 );
-	e[1] *= 180.0/PI;
-
-	//atan2(2(zw+xy), 1-2(yy+zz))
-	e[2] = atan2( (rq[2]*rq[3]+rq[0]*rq[1])*2 , 1-(rq[1]*rq[1]+rq[2]*rq[2])*2 );
-	e[2] *= 180.0/PI;
-}
 
 void setled(int r, int g, int b)
 {
@@ -46,6 +31,10 @@ void loop()
   unsigned long ms = millis();
   //Serial.printf("%f,%f\n", mpu.get_acce_resolution(), mpu.get_gyro_resolution() );
 
+  float a1 = analogRead(1) * 3.3 / 4096;
+  float a2 = analogRead(2) * 3.3 / 4096;
+  //Serial.printf("v1=%f v2=%f\n", a1, a2);
+
   int16_t ax, ay, az, gx, gy, gz;
   mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
   //Serial.printf("raw: a=(%d,%d,%d) g=(%d,%d,%d) t=%d\n", ax,ay,az, gx,gy,gz, ms);
@@ -66,17 +55,15 @@ void loop()
   float q[4];
   mahony_getq(q);
   //printf("%f,%f,%f,%f\n", q[0], q[1], q[2], q[3]);
-
+/*
   float e[3];
   quaternion2eulerian(q, e);
   printf("%f,%f,%f\n", e[0], e[1], e[2]);
-/*
-  float vec[3];
-  computeforce(q, vec);
-  float len = sqrt(vec[0]*vec[0]+vec[1]*vec[1]);
-  Serial.printf("%f,%f,%f,%f\n", vec[0], vec[1], vec[2], len);
-  val2led(vec[1]*90*2/PI);
 */
+  float vec[4];
+  computeforce(q, vec);
+  Serial.printf("%f,%f,%f,%f\n", vec[0], vec[1], vec[2], vec[3]);
+  val2led(vec[1]*90*2/PI);
 }
 
 void setup()
@@ -84,6 +71,9 @@ void setup()
   //led.init();   //no need
 
   Serial.begin(115200);
+
+  pinMode(1, INPUT);
+  pinMode(2, INPUT);
 
   Wire.begin(18, 17);  //SCL = 17, SDA = 18
 

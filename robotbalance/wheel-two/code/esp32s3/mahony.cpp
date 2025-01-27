@@ -3,7 +3,7 @@
 //axis system: east-north-sky, right-front-top
 //
 #define twoKp 1.0
-#define twoKi 0.0001
+#define twoKi 0.01
 //
 static float q[4];
 #define qx q[0]
@@ -50,9 +50,9 @@ void mahony_update6(
 		az *= recipNorm;
 
 		// Estimated direction of gravity
-		halfvx = qx * qz - qw * qy;
-		halfvy = qw * qx + qy * qz;
-		halfvz = qw*qw + qz*qz - 0.5f;  //=1.0-(x*x+y*y)-0.5=0.5-(x*x+y*y)
+		halfvx = (qx * qz - qw * qy);
+		halfvy = (qw * qx + qy * qz);
+		halfvz = (qw*qw + qz*qz - 0.5);  //=1.0-(x*x+y*y)-0.5=0.5-(x*x+y*y)
 
 		// Error = cross(estimated_grav_dir, measured_grav_dir)
 		halfex = (halfvy * az - halfvz * ay);
