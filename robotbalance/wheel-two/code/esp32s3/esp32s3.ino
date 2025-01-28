@@ -1,3 +1,5 @@
+#include "mywifi.h"
+#include "myble.h"
 #include <Wire.h>
 #include <MPU6050.h>
 #include "mahony.h"
@@ -62,8 +64,12 @@ void loop()
 */
   float vec[4];
   computeforce(q, vec);
-  Serial.printf("%f,%f,%f,%f\n", vec[0], vec[1], vec[2], vec[3]);
+
+  //Serial.printf("%f,%f,%f,%f\n", vec[0], vec[1], vec[2], vec[3]);
   val2led(vec[1]*90*2/PI);
+
+  pollwifi();
+  pollble();
 }
 
 void setup()
@@ -71,6 +77,10 @@ void setup()
   //led.init();   //no need
 
   Serial.begin(115200);
+
+  initwifi();
+
+  initble();
 
   pinMode(1, INPUT);
   pinMode(2, INPUT);
@@ -83,3 +93,52 @@ void setup()
 
   oldtime = millis();
 }
+
+
+
+
+/*
+// 主任务函数（运行在核心0）
+void mainTask(void* parameter) {
+  // 初始化逻辑（原setup内容）
+  Serial.begin(115200);
+  Serial.println("Main task running on core " + String(xPortGetCoreID()));
+
+  while (1) {
+    // 主循环逻辑（原loop内容）
+    Serial.println("Main task loop");
+    delay(1000);
+  }
+}
+
+void otherTask(void* parameter) {
+}
+
+void setup() {
+  // 创建主任务，绑定到核心0
+  xTaskCreatePinnedToCore(
+    mainTask,   // 任务函数
+    "mainTask", // 任务名称
+    10000,      // 堆栈大小
+    NULL,       // 任务参数
+    1,          // 任务优先级
+    NULL,       // 任务句柄
+    0           // 核心编号（0或1）
+  );
+
+  // 创建WiFi任务，绑定到核心1
+  xTaskCreatePinnedToCore(
+    otherTask,   // 任务函数
+    "otherTask", // 任务名称
+    10000,      // 堆栈大小
+    NULL,       // 任务参数
+    1,          // 任务优先级
+    NULL,       // 任务句柄
+    1           // 核心编号（0或1）
+  );
+}
+
+void loop() {
+  // 空实现，因为任务逻辑已经在mainTask中
+}
+*/

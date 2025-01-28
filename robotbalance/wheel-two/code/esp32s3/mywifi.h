@@ -1,0 +1,2 @@
+void initwifi();
+void pollwifi();
