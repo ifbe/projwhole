@@ -1464,6 +1464,12 @@ module logicboard_esp32s3_muselab(){
     translate([t+5,- 5, 0])cylinder(1000, r=1.6,center=true,$fn=50);
     translate([t+5,-15, 0])cylinder(1000, r=1.6,center=true,$fn=50);
     }
+    //
+    translate([-35, 0, 5])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    translate([ 35, 0, 5])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    //
+    translate([ 0,-15, 5])rotate([0,90,0])cylinder(199, r=1.6,center=true,$fn=50);
+    translate([ 0, 15, 5])rotate([0,90,0])cylinder(199, r=1.6,center=true,$fn=50);
     }
 
     /*
@@ -1799,26 +1805,43 @@ module xh254_3pin_male(){
     }
 }
 module mainbody_power(){
+    //y+30
+    translate([0,20-2-4,40-9-0.99/2])cube([80,8,0.99],center=true);
+
+    //above board: 7v to 5v
     difference(){
-        translate([0,0,40-9-0.99/2])cube([80,40,0.99],center=true);
-        //
-        translate([0, -20+30/2, 30])cube([60,30,10],center=true);
-        //pcb
-        translate([0,20-2/2,30])cube([60,2,10],center=true);
-        //switchport
-        translate([0, -20+10/2, 30])cube([15, 10, 22],center=true);
+    union(){
+    translate([-20, -20+1, 25])cube([20, 2, 10],center=true);
+    translate([-35, -20+8+1, 25])cube([10, 2, 10],center=true);
+    //
+    translate([-40+15, -20+2+4, 15])cube([30, 8, 10],center=true);
+    translate([-40+20, -20+1, 15])cube([20, 2, 10],center=true);
+    }
+    translate([-40+15, -15, 15])cube([26,6,10],center=true);
+    translate([-40+15, -15, 15])cube([50,2,10],center=true);
+    //
+    translate([-35, 0, 25])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    translate([-25, 0, 25])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    translate([-15, 0, 25])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    translate([-35, 0, 15])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    translate([-25, 0, 15])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    translate([-15, 0, 15])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
     }
 
-    translate([-20, -12, 6])xh254_3pin_female();
+    //above board: -20
+    //translate([-20, -12, 6])xh254_3pin_female();
 
+    //above board: 0
     difference(){
         translate([0, -20, 20])switchport();
         //cable through it
         translate([0, -20, 30])cube([0.2, 20, 10],center=true);
     }
 
+    //above board: 20
     translate([ 20, -10, 9])xh254_3pin_male();
 
+    //board
     difference(){
         translate([0,0,9+0.99/2])cube([80,40,0.99],center=true);
         //pcb
@@ -1826,13 +1849,14 @@ module mainbody_power(){
         //hole to below level
         translate([0,20-10/2,9+0.4/2])cube([10,10,10],center=true);
         //xt254
-        translate([-20, -12, 10])cube([12, 16, 10],center=true);
+        //translate([-20, -12, 10])cube([12, 16, 10],center=true);
         //switchport
         translate([0, -20+10/2, 10])cube([15, 10, 22],center=true);
     }
-    //batt out
+
+    //below board: batt out
     translate([-10.2, 0, 10])rotate([0,0,90])mirror([0,0,1])xh254_3pin_male();
-    //power in
+    //below board: power in
     translate([8.2, 0, 9-1/2])cube([16, 14, 1],center=true);
     translate([8.2, 0, 11])rotate([0,0,-90])mirror([0,0,1])xh254_3pin_female();
 
@@ -2022,10 +2046,10 @@ color([0.7,0.2,0.9,0.8])translate([ 0,0,-25])inner_bot();
 
 
 //--------for print--------
-logicboard_esp32s3_muselab();
+//logicboard_esp32s3_muselab();
 
 //mainbody_power();
-//mainbody_drv8833_help();
+mainbody_drv8833_help();
 
 //bot_motorseat();
 //bot_motorseat_connector();
