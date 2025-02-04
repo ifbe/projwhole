@@ -1,46 +1,110 @@
 #include <WiFi.h>
 #include <WebServer.h>
-#include <EEPROM.h>
+#include "mystor.h"
 
 const char* ap_ssid = "esp32s3_muselab";
-const char* ap_password = "12345678";
+const char* ap_pass = "12345678";
 
 String sta_ssid = "";
-String sta_password = "";
+String sta_pass = "";
 
 WebServer server(80);
 
-void saveCredentials() {
-  EEPROM.begin(512);
-  EEPROM.put(0, sta_ssid);
-  EEPROM.put(128, sta_password);
-  EEPROM.commit();
-  EEPROM.end();
+void build_page_head(String& html){
+  html += "<a href='/wifi'>wifi</a>\n";
+  html += "<a href='/ble'>ble</a>\n";
+  html += "<a href='/sensor'>sensor</a>\n";
+  html += "<a href='/mahony'>mahony</a>\n";
+  html += "<a href='/planner'>planner</a>\n";
+  html += "<a href='/led'>led</a>\n";
+  html += "<a href='/motor'>motor</a>\n";
+  html += "<a href='/battery'>battery</a>\n";
+  html += "<hr>\n";
 }
 
-void loadCredentials() {
-  EEPROM.begin(512);
-  EEPROM.get(0, sta_ssid);
-  EEPROM.get(128, sta_password);
-  EEPROM.end();
-}
+void handle_wifi() {
+  Serial.println(__FUNCTION__);
 
-void handleRoot() {
-  String html = "<form action='/save' method='POST'>";
+  String html;
+  build_page_head(html);
+  html += "<form action='/wifisave' method='POST'>";
   html += "SSID: <input type='text' name='ssid' value='" + sta_ssid + "'><br>";
-  html += "Password: <input type='password' name='password' value='" + sta_password + "'><br>";
+  html += "PASS: <input type='password' name='pass' value='" + sta_pass + "'><br>";
   html += "<input type='submit' value='Save'>";
   html += "</form>";
   server.send(200, "text/html", html);
 }
 
-void handleSave() {
+void handle_wifi_save() {
+  Serial.println(__FUNCTION__);
+
   sta_ssid = server.arg("ssid");
-  sta_password = server.arg("password");
-  saveCredentials();
+  sta_pass = server.arg("pass");
+  saveCredentials(sta_ssid, sta_pass);
   server.send(200, "text/plain", "Credentials saved. Restarting...");
   delay(1000);
-  ESP.restart();
+  esp_restart();
+}
+
+void handle_ble() {
+  Serial.println(__FUNCTION__);
+
+  String html;
+  build_page_head(html);
+  html += "...";
+  server.send(200, "text/html", html);
+}
+
+void handle_sensor() {
+  Serial.println(__FUNCTION__);
+
+  String html;
+  build_page_head(html);
+  server.send(200, "text/html", html);
+}
+
+void handle_mahony() {
+  Serial.println(__FUNCTION__);
+
+  String html;
+  build_page_head(html);
+  server.send(200, "text/html", html);
+}
+
+void handle_planner() {
+  Serial.println(__FUNCTION__);
+
+  String html;
+  build_page_head(html);
+  server.send(200, "text/html", html);
+}
+
+void handle_led() {
+  Serial.println(__FUNCTION__);
+
+  String html;
+  build_page_head(html);
+  server.send(200, "text/html", html);
+}
+
+void handle_motor() {
+  Serial.println(__FUNCTION__);
+
+  String html;
+  build_page_head(html);
+  server.send(200, "text/html", html);
+}
+
+void handle_battery() {
+  Serial.println(__FUNCTION__);
+
+  String html;
+  build_page_head(html);
+  server.send(200, "text/html", html);
+}
+
+void handleRoot() {
+  handle_wifi();
 }
 
 void WiFiEvent(WiFiEvent_t event) {
@@ -110,17 +174,25 @@ void WiFiEvent(WiFiEvent_t event) {
 
 void initwifi()
 {
-  loadCredentials();
-  Serial.printf("ap: ssid=%s, pass=%s\n", ap_ssid, ap_password);
-  Serial.printf("sta: ssid=%s, pass=%s\n", sta_ssid.c_str(), sta_password.c_str());
+  loadCredentials(sta_ssid, sta_pass);
+  Serial.printf("ap: ssid=%s, pass=%s\n", ap_ssid, ap_pass);
+  Serial.printf("sta: ssid=%s, pass=%s\n", sta_ssid.c_str(), sta_pass.c_str());
 
   WiFi.onEvent(WiFiEvent);
 
-  WiFi.softAP(ap_ssid, ap_password);
-  WiFi.begin(sta_ssid.c_str(), sta_password.c_str());
+  WiFi.softAP(ap_ssid, ap_pass);
+  WiFi.begin(sta_ssid.c_str(), sta_pass.c_str());
 
   server.on("/", handleRoot);
-  server.on("/save", handleSave);
+  server.on("/wifi", handle_wifi);
+  server.on("/wifisave", handle_wifi_save);
+  server.on("/ble", handle_ble);
+  server.on("/sensor", handle_sensor);
+  server.on("/mahony", handle_mahony);
+  server.on("/planner", handle_planner);
+  server.on("/led", handle_led);
+  server.on("/motor", handle_motor);
+  server.on("/battery", handle_battery);
   server.begin();
 
   Serial.println("AP IP address: " + WiFi.softAPIP().toString());

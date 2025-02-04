@@ -1,10 +1,11 @@
-#include "mywifi.h"
-#include "myble.h"
 #include <Wire.h>
 #include <MPU6050.h>
 #include "mahony.h"
 #include "planner.h"
 #include "actuator.h"
+#include "battery.h"
+#include "mywifi.h"
+#include "myble.h"
 
 MPU6050 mpu;
 unsigned long oldtime;
@@ -32,10 +33,6 @@ void loop()
 {
   unsigned long ms = millis();
   //Serial.printf("%f,%f\n", mpu.get_acce_resolution(), mpu.get_gyro_resolution() );
-
-  float a1 = analogRead(1) * 3.3 / 4096;
-  float a2 = analogRead(2) * 3.3 / 4096;
-  //Serial.printf("v1=%f v2=%f\n", a1, a2);
 
   int16_t ax, ay, az, gx, gy, gz;
   mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
@@ -66,8 +63,18 @@ void loop()
   computeforce(q, vec);
 
   //Serial.printf("%f,%f,%f,%f\n", vec[0], vec[1], vec[2], vec[3]);
-  val2led(vec[1]*90*2/PI);
+  float deg = vec[1]*90*2/PI;
+  val2led(deg);
 
+  float percent = deg*2; //max = 50deg
+  if(abs(percent)>100){
+    motor_output(0, 0);
+  }
+  else{
+    motor_output(deg*2, deg*2);
+  }
+
+  pollbattery();
   pollwifi();
   pollble();
 }
@@ -82,8 +89,9 @@ void setup()
 
   initble();
 
-  pinMode(1, INPUT);
-  pinMode(2, INPUT);
+  initbattery();
+
+  initmotor();
 
   Wire.begin(18, 17);  //SCL = 17, SDA = 18
 
