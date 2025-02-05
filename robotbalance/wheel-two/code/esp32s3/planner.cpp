@@ -86,3 +86,32 @@ void computeforce(float* qin, float* vec)
   vec[3] *= 180 / MYPI;
 */
 }
+
+float angle_kp = 2;
+float angle_kd = 0;
+float angle_preverr = 0;
+float angle_prevms = 0;
+void anglering(float err, float* out, long ms)
+{
+  float vd = 0;
+  if(angle_prevms){
+    float dt = ms - angle_prevms;
+    vd = (err-angle_preverr)/dt;
+  }
+  float val = err*angle_kp + vd*angle_kd;
+  out[0] += val;
+  out[1] += val;
+
+  angle_preverr = err;
+  angle_prevms = ms;
+}
+
+void computepid(float* in, float* out, long ms)
+{
+  float deg = in[1] * 180 / MYPI;
+
+  out[0] = out[1] = 0;
+  if(abs(deg)>50)return;
+
+  anglering(deg, out, ms);
+}

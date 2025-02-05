@@ -15,6 +15,6 @@ void pollbattery()
 }
 void getvolt(float* v1, float* v2)
 {
-  *v1 = a1;
-  *v2 = a2;
+  *v1 = a1 * (100000+200000) / 200000;
+  *v2 = a2 * (100000+200000) / 100000;
 }

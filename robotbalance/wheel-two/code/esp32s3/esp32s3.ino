@@ -66,13 +66,10 @@ void loop()
   float deg = vec[1]*90*2/PI;
   val2led(deg);
 
-  float percent = deg*2; //max = 50deg
-  if(abs(percent)>100){
-    motor_output(0, 0);
-  }
-  else{
-    motor_output(deg*2, deg*2);
-  }
+  float val[2];
+  computepid(vec, val, ms);
+  //Serial.printf("%f,%f\n", val[0], val[1]);
+  drv8833_output(val[0], val[1]);
 
   pollbattery();
   pollwifi();

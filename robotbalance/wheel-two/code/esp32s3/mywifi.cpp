@@ -1,6 +1,8 @@
 #include <WiFi.h>
 #include <WebServer.h>
+#include <string.h>
 #include "mystor.h"
+#include "battery.h"
 
 const char* ap_ssid = "esp32s3_muselab";
 const char* ap_pass = "12345678";
@@ -98,8 +100,15 @@ void handle_motor() {
 void handle_battery() {
   Serial.println(__FUNCTION__);
 
+  float v1,v2;
+  getvolt(&v1, &v2);
+
   String html;
   build_page_head(html);
+  html += "<pre>";
+  html += "v1=" + String(v1) + "\n";
+  html += "v2=" + String(v2) + "\n";
+  html += "</pre>";
   server.send(200, "text/html", html);
 }
 
