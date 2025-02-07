@@ -20,6 +20,7 @@ void initmotor()
   ledcAttach(PIN_RIGHT_N, PWM_FREQ, PWM_RESOLUTION);
   pinMode(PIN_RIGHT_EN, OUTPUT);
 }
+
 void drv8833_output(float fl, float fr)
 {
   if(abs(fl)<0.001){
@@ -30,11 +31,13 @@ void drv8833_output(float fl, float fr)
     int il_n = 0;
     if(fl<0){
       il_p = 255;
-      il_n = (int)(-fl*255/100);
+      il_n = 255 + (int)(fl*255/1000);
+      if(il_n < 0)il_n = 0;
     }
     else{
-      il_p = (int)(fl*255/100);
+      il_p = 255 - (int)(fl*255/1000);
       il_n = 255;
+      if(il_p < 0)il_p = 0;
     }
     ledcWrite(PIN_LEFT_P, il_p);
     ledcWrite(PIN_LEFT_N, il_n);
@@ -49,11 +52,13 @@ void drv8833_output(float fl, float fr)
     int ir_n = 0;
     if(fr<0){
       ir_p = 255;
-      ir_n = (int)(-fr*255/100);
+      ir_n = 255 + (int)(fr*255/1000);
+      if(ir_n < 0)ir_n = 0;
     }
     else{
-      ir_p = (int)(fr*255/100);
+      ir_p = 255 - (int)(fr*255/1000);
       ir_n = 255;
+      if(ir_p < 0)ir_p = 0;
     }
     ledcWrite(PIN_RIGHT_P, ir_p);
     ledcWrite(PIN_RIGHT_N, ir_n);

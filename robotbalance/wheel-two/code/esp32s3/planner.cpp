@@ -1,5 +1,6 @@
-#include <math.h>
-#define MYPI 3.141592653
+#include <Arduino.h>
+//#include <math.h>
+#include "actuator.h"
 
 void quaternion_multiplyfrom(float* o, float* l, float* r)
 {
@@ -57,7 +58,7 @@ void axismulangle2axisandangle(float* a, float* q)
   q[3] = angle;
 }
 
-void computeforce(float* qin, float* vec)
+void computeeulerian(float* qin, float* vec)
 {
   //1.rmat_sensortoworld = worldspace_sensorattitude = q
   //  rmat_worldtosensor = sensorspace_worldattitude = q^
@@ -87,16 +88,41 @@ void computeforce(float* qin, float* vec)
 */
 }
 
-float angle_kp = 2;
+static float prevspeed = 0;   //pseudo realtime speed
+float pseudospeed()
+{
+  if(prevspeed<-500)return prevspeed+500;
+  if(prevspeed< 500)return 0;
+  return prevspeed-500;
+}
+
+static float wantspeed = 0;
+static float speed_kp = -0.002;
+void speedring(float* wantdeg)
+{
+  float currspeed = pseudospeed();
+
+  float err = wantspeed - currspeed;
+  float val = err*speed_kp;
+  if(val <-5)val =-5;
+  if(val > 5)val = 5;
+  //Serial.printf("%f,%f -> %f\n", wantspeed, currspeed, val);
+
+  *wantdeg = val;
+}
+
+float angle_kp = 80;
 float angle_kd = 0;
 float angle_preverr = 0;
 float angle_prevms = 0;
-void anglering(float err, float* out, long ms)
+void pitchring(float wantdeg, float currdeg, float* out, long ms)
 {
+  float err = wantdeg - currdeg;
+
   float vd = 0;
   if(angle_prevms){
     float dt = ms - angle_prevms;
-    vd = (err-angle_preverr)/dt;
+    if(dt>0)vd = (err-angle_preverr)/dt;
   }
   float val = err*angle_kp + vd*angle_kd;
   out[0] += val;
@@ -104,14 +130,24 @@ void anglering(float err, float* out, long ms)
 
   angle_preverr = err;
   angle_prevms = ms;
+
+  //motor pwm as pseudo speed
+  prevspeed = val;
 }
 
 void computepid(float* in, float* out, long ms)
 {
-  float deg = in[1] * 180 / MYPI;
+  float deg = in[1];
 
   out[0] = out[1] = 0;
-  if(abs(deg)>50)return;
+  if(abs(deg)>60)return;
 
-  anglering(deg, out, ms);
+  //speed -> pitch
+  float wantdeg=0;
+  speedring(&wantdeg);
+
+  //pitch -> force
+  pitchring(1+wantdeg, deg, out, ms);
+
+  //yaw -> force
 }

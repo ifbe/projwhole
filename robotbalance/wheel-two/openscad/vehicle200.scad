@@ -1440,58 +1440,25 @@ module logicboard_esp32s3_muselab(){
 
     //
     difference(){
-    translate([0, 0, 10/2])cube([80-0.2, 40-0.2, 10],center=true);
+    translate([0, 0, 40/2])cube([80-0.2, 40-0.2, 40-0.2],center=true);
     //
-    translate([0, 0, 2+8/2])cube([61, 31, 8.01],center=true);
+    translate([0, 0, 40])cube([60, 30, 20],center=true);
+    translate([0, 0, 38-28/2])cube([80, 36-0.2, 28],center=true);
+    translate([0, 0, 20/2])cube([40, 99, 20],center=true);
     //
-    translate([0, 0, 2-1.8/2])cube([54,28,1.8],center=true);
+    translate([0, 0, 2+2/2])cube([99, 34, 2],center=true);
+    translate([0, 0, 10/2])cube([99, 28, 11],center=true);
     //
-    translate([0, 0, 2+8/2])cube([99, 32-12, 8.01],center=true);
-    translate([0, 0, 2+8/2])cube([40, 99, 8.01],center=true);
-    //
-    translate([-40+5, 0, 0])cube([10, 10, 10],center=true);
-    translate([ 40-5, 0, 0])cube([10, 10, 10],center=true);
-    //
-    for(t=[-40:70:30]){
-    //
-    translate([t+5, 15, 2+8/2])cylinder(8.01, r=4,center=true,$fn=50);
-    translate([t+5,  5, 2+8/2])cylinder(8.01, r=4,center=true,$fn=50);
-    translate([t+5,- 5, 2+8/2])cylinder(8.01, r=4,center=true,$fn=50);
-    translate([t+5,-15, 2+8/2])cylinder(8.01, r=4,center=true,$fn=50);
-    //
-    translate([t+5, 15, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-    translate([t+5,  5, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-    translate([t+5,- 5, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-    translate([t+5,-15, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-    }
-    //
+    //hole y
+    translate([-35, 0,35])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    translate([-25, 0,35])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    translate([ 25, 0,35])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    translate([ 35, 0,35])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
     translate([-35, 0, 5])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
     translate([-25, 0, 5])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
     translate([ 25, 0, 5])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
     translate([ 35, 0, 5])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
-    //
-    translate([ 0,-15, 5])rotate([0,90,0])cylinder(199, r=1.6,center=true,$fn=50);
-    translate([ 0, 15, 5])rotate([0,90,0])cylinder(199, r=1.6,center=true,$fn=50);
     }
-
-    /*
-    difference(){
-        union(){
-        translate([0, 0, 2/2])cube([80+0.2, 40+0.2, 2],center=true);
-        }
-
-        translate([0, 0, 2/2])cube([40,20,1000],center=true);
-
-        translate([-40+5, 0, 0])cube([3, 10, 10],center=true);
-        translate([ 40-5, 0, 0])cube([3, 10, 10],center=true);
-        
-        for(t=[-40:70:30]){
-        translate([t+5, 15, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([t+5,  5, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([t+5,- 5, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([t+5,-15, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        }
-    }*/
 }
 
 module mainbody_head(){

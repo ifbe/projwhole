@@ -29,6 +29,13 @@ void val2led(float val)
   else setled(0, 0, -val);
 }
 
+void radian2degree(float* vec)
+{
+  vec[0] *= 180/PI;
+  vec[1] *= 180/PI;
+  vec[2] *= 180/PI;
+}
+
 void loop()
 {
   unsigned long ms = millis();
@@ -54,21 +61,20 @@ void loop()
   float q[4];
   mahony_getq(q);
   //printf("%f,%f,%f,%f\n", q[0], q[1], q[2], q[3]);
-/*
-  float e[3];
-  quaternion2eulerian(q, e);
-  printf("%f,%f,%f\n", e[0], e[1], e[2]);
-*/
-  float vec[4];
-  computeforce(q, vec);
 
-  //Serial.printf("%f,%f,%f,%f\n", vec[0], vec[1], vec[2], vec[3]);
-  float deg = vec[1]*90*2/PI;
-  val2led(deg);
+  float vec[4];
+  computeeulerian(q, vec);
+  //Serial.printf("%f,%f,%f\n", vec[0], vec[1], vec[2]);
+
+  radian2degree(vec);
+  Serial.printf("%f,%f,%f\n", vec[0], vec[1], vec[2]);
+
+  val2led(vec[1]);
 
   float val[2];
   computepid(vec, val, ms);
-  //Serial.printf("%f,%f\n", val[0], val[1]);
+  //Serial.printf("%f -> %f,%f\n", vec[1], val[0], val[1]);
+
   drv8833_output(val[0], val[1]);
 
   pollbattery();
@@ -95,6 +101,8 @@ void setup()
   mpu.initialize(ACCEL_FS::A2G, GYRO_FS::G1000DPS);
 
   mahony_init();
+
+  //delay(3000);
 
   oldtime = millis();
 }
