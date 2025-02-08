@@ -2,8 +2,8 @@
 //origin code: https://github.com/PaulStoffregen/MahonyAHRS
 //axis system: east-north-sky, right-front-top
 //
-#define twoKp 1.0
-#define twoKi 0.01
+#define twoKp 2.0
+#define twoKi 0.05
 //
 static float q[4];
 #define qx q[0]
@@ -28,63 +28,15 @@ static float invSqrt(float x) {
 }
 
 
-
-
-void mahony_update6(
+void mahony_update3(
 	float gx, float gy, float gz,
-	float ax, float ay, float az,
-  float deltaT)
+	float deltaT)
 {
-	float recipNorm;
-	float halfvx, halfvy, halfvz;
-	float halfex, halfey, halfez;
-
-	// Compute feedback only if accelerometer measurement valid
-	// (avoids NaN in accelerometer normalisation)
-	if(!((ax == 0.0f) && (ay == 0.0f) && (az == 0.0f))) {
-
-		// Normalise accelerometer measurement
-		recipNorm = invSqrt(ax * ax + ay * ay + az * az);
-		ax *= recipNorm;
-		ay *= recipNorm;
-		az *= recipNorm;
-
-		// Estimated direction of gravity
-		halfvx = (qx * qz - qw * qy);
-		halfvy = (qw * qx + qy * qz);
-		halfvz = (qw*qw + qz*qz - 0.5);  //=1.0-(x*x+y*y)-0.5=0.5-(x*x+y*y)
-
-		// Error = cross(estimated_grav_dir, measured_grav_dir)
-		halfex = (halfvy * az - halfvz * ay);
-		halfey = (halfvz * ax - halfvx * az);
-		halfez = (halfvx * ay - halfvy * ax);
-
-		// Compute and apply integral feedback if enabled
-		if(twoKi > 0.0f) {
-			// integral error scaled by Ki
-			integralx += twoKi * halfex * deltaT;
-			integraly += twoKi * halfey * deltaT;
-			integralz += twoKi * halfez * deltaT;
-			gx += integralx;	// apply integral feedback
-			gy += integraly;
-			gz += integralz;
-		} else {
-			integralx = 0.0f;	// prevent integral windup
-			integraly = 0.0f;
-			integralz = 0.0f;
-		}
-
-		// Apply proportional feedback
-		gx += twoKp * halfex;
-		gy += twoKp * halfey;
-		gz += twoKp * halfez;
-	}
-
-	// Integrate rate of change of quaternion
-	gx *= (0.5f * deltaT);		// pre-multiply common factors
+	gx *= (0.5f * deltaT);
 	gy *= (0.5f * deltaT);
 	gz *= (0.5f * deltaT);
 
+	//
 	float pw = qw;
 	float px = qx;
 	float py = qy;
@@ -94,13 +46,67 @@ void mahony_update6(
 	qz += ( gy * px -gx * py + 0 * px +gz * pw);
 	qw += (-gx * px -gy * py -gz * pz + 0 * pw);
 
-	// Normalise quaternion
-	recipNorm = invSqrt(qw * qw + qx * qx + qy * qy + qz * qz);
-	qw *= recipNorm;
-	qx *= recipNorm;
-	qy *= recipNorm;
-	qz *= recipNorm;
+	float invnorm = invSqrt(qw * qw + qx * qx + qy * qy + qz * qz);
+	qw *= invnorm;
+	qx *= invnorm;
+	qy *= invnorm;
+	qz *= invnorm;
 }
+void mahony_update6(
+	float gx, float gy, float gz,
+	float ax, float ay, float az,
+	float deltaT)
+{
+	if( (ax == 0.0f) && (ay == 0.0f) && (az == 0.0f) ){
+		mahony_update3(gx, gy, gz, deltaT);
+		return;
+	}
+
+	float recipNorm;
+	float halfvx, halfvy, halfvz;
+	float halfex, halfey, halfez;
+
+	// bodyspace measure_grav_dir
+	recipNorm = invSqrt(ax * ax + ay * ay + az * az);
+	ax *= recipNorm;
+	ay *= recipNorm;
+	az *= recipNorm;
+
+	// bodyspace predict_grav_dir
+	halfvx = -(qx * qz - qw * qy);
+	halfvy = -(qw * qx + qy * qz);
+	halfvz = -(qw * qw + qz * qz - 0.5);
+
+	// bodyspace grav_error = cross(measure_grav_dir, predict_grav_dir)
+	halfex = (ay * halfvz - az * halfvy);
+	halfey = (az * halfvx - ax * halfvz);
+	halfez = (ax * halfvy - ay * halfvx);
+
+	// Compute and apply integral feedback if enabled
+	if(twoKi > 0.0f) {
+		// integral error scaled by Ki
+		integralx += twoKi * halfex * deltaT;
+		integraly += twoKi * halfey * deltaT;
+		integralz += twoKi * halfez * deltaT;
+		gx += integralx;	// apply integral feedback
+		gy += integraly;
+		gz += integralz;
+	}
+	else {
+		integralx = 0.0f;	// prevent integral windup
+		integraly = 0.0f;
+		integralz = 0.0f;
+	}
+
+	// Apply proportional feedback
+	gx += twoKp * halfex;
+	gy += twoKp * halfey;
+	gz += twoKp * halfez;
+
+	//use new gyro val
+	mahony_update3(gx, gy, gz, deltaT);
+}
+
 void mahony_getq(float* o)
 {
   o[0] = qx;

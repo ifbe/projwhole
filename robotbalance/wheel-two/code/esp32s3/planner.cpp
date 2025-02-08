@@ -91,9 +91,9 @@ void computeeulerian(float* qin, float* vec)
 static float prevspeed = 0;   //pseudo realtime speed
 float pseudospeed()
 {
-  if(prevspeed<-500)return prevspeed+500;
-  if(prevspeed< 500)return 0;
-  return prevspeed-500;
+  if(prevspeed<-1000)return prevspeed+1000;
+  if(prevspeed< 1000)return prevspeed/100;
+  return prevspeed-1000;
 }
 
 static float wantspeed = 0;
@@ -147,7 +147,7 @@ void computepid(float* in, float* out, long ms)
   speedring(&wantdeg);
 
   //pitch -> force
-  pitchring(1+wantdeg, deg, out, ms);
+  pitchring(0+wantdeg, deg, out, ms);
 
   //yaw -> force
 }

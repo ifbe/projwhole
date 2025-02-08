@@ -8,8 +8,8 @@
 #include "myble.h"
 
 MPU6050 mpu;
-unsigned long oldtime;
-float deltaT;
+static unsigned long oldtime;
+static unsigned long fusioncount;
 
 
 
@@ -54,9 +54,11 @@ void loop()
   fgz = (gz) * (1000.0 / 32768) * PI / 180;
   //Serial.printf("std: a=(%f,%f,%f) g=(%f,%f,%f) t=%d\n", fax,fay,faz, fgx,fgy,fgz, ms);
 
-  deltaT = (ms-oldtime)*0.001;
+  float deltaT = (ms-oldtime)*0.001;
   oldtime = ms;
+
   mahony_update6(fgx, fgy, fgz, fax, fay, faz, deltaT);
+  if(fusioncount <= 200)fusioncount++;
 
   float q[4];
   mahony_getq(q);
@@ -71,11 +73,13 @@ void loop()
 
   val2led(vec[1]);
 
-  float val[2];
-  computepid(vec, val, ms);
-  //Serial.printf("%f -> %f,%f\n", vec[1], val[0], val[1]);
+  if(fusioncount >= 200){
+    float val[2];
+    computepid(vec, val, ms);
+    //Serial.printf("%f -> %f,%f\n", vec[1], val[0], val[1]);
 
-  drv8833_output(val[0], val[1]);
+    drv8833_output(val[0], val[1]);
+  }
 
   pollbattery();
   pollwifi();
@@ -84,6 +88,9 @@ void loop()
 
 void setup()
 {
+  //let power stable ?
+  delay(1000);
+
   //led.init();   //no need
 
   Serial.begin(115200);
@@ -104,6 +111,7 @@ void setup()
 
   //delay(3000);
 
+  fusioncount = 0;
   oldtime = millis();
 }
 
