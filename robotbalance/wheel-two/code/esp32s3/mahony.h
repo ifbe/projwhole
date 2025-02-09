@@ -1,6 +1,9 @@
 
 void mahony_init();
 
+void mahony_getpid(float* pid);
+void mahony_setpid(float* pid);
+
 void mahony_getq(float* q);
 
 void mahony_update6(

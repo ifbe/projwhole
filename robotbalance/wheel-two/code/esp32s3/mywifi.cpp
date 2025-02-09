@@ -3,6 +3,7 @@
 #include <string.h>
 #include "mystor.h"
 #include "battery.h"
+#include "mahony.h"
 
 const char* ap_ssid = "esp32s3_muselab";
 const char* ap_pass = "12345678";
@@ -68,9 +69,33 @@ void handle_sensor() {
 void handle_mahony() {
   Serial.println(__FUNCTION__);
 
+  float pid[3];
+  mahony_getpid(pid);
+
   String html;
   build_page_head(html);
+  html += "<form action='/mahonysave' method='POST'>";
+  html += "SSID: <input type='text' name='p' value='" + String(pid[0]) + "'><br>";
+  html += "PASS: <input type='text' name='i' value='" + String(pid[1]) + "'><br>";
+  html += "<input type='submit' value='Save'>";
+  html += "</form>";
   server.send(200, "text/html", html);
+}
+
+void handle_mahony_save() {
+  Serial.println(__FUNCTION__);
+
+  String str_p = server.arg("p");
+  String str_i = server.arg("i");
+
+  float pid[3];
+  pid[0] = str_p.toFloat();
+  pid[1] = str_i.toFloat();
+  Serial.printf("mahony setpid=%f,%f\n", pid[0], pid[1]);
+  mahony_setpid(pid);
+
+  server.sendHeader("Location", "/mahony");
+  server.send(303);
 }
 
 void handle_planner() {
@@ -193,15 +218,25 @@ void initwifi()
   WiFi.begin(sta_ssid.c_str(), sta_pass.c_str());
 
   server.on("/", handleRoot);
+
   server.on("/wifi", handle_wifi);
   server.on("/wifisave", handle_wifi_save);
+
   server.on("/ble", handle_ble);
+
   server.on("/sensor", handle_sensor);
+
   server.on("/mahony", handle_mahony);
+  server.on("/mahonysave", handle_mahony_save);
+
   server.on("/planner", handle_planner);
+
   server.on("/led", handle_led);
+
   server.on("/motor", handle_motor);
+
   server.on("/battery", handle_battery);
+
   server.begin();
 
   Serial.println("AP IP address: " + WiFi.softAPIP().toString());

@@ -69,7 +69,7 @@ void loop()
   //Serial.printf("%f,%f,%f\n", vec[0], vec[1], vec[2]);
 
   radian2degree(vec);
-  Serial.printf("%f,%f,%f\n", vec[0], vec[1], vec[2]);
+  Serial.printf("%d: %f,%f,%f\n", ms, vec[0], vec[1], vec[2]);
 
   val2led(vec[1]);
 

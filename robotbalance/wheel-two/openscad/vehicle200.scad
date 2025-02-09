@@ -1773,62 +1773,122 @@ module xh254_3pin_male(){
     translate([0,-21/2+1/2, 10-7/2])cube([9,1.01,7.01],center=true);
     }
 }
-module mainbody_power(){
-    //y+30
-    translate([0,20-2-4,40-9-0.99/2])cube([80,8,0.99],center=true);
 
-    //above board: 7v to 5v
+module xh254_5pin_female(){
     difference(){
     union(){
-    translate([-20, -20+1, 25])cube([20, 2, 10],center=true);
-    translate([-35, -20+8+1, 25])cube([10, 2, 10],center=true);
-    //
-    translate([-40+15, -20+2+4, 15])cube([30, 8, 10],center=true);
-    translate([-40+20, -20+1, 15])cube([20, 2, 10],center=true);
-    }
-    translate([-40+15, -15, 15])cube([26,6,10],center=true);
-    translate([-40+15, -15, 15])cube([50,2,10],center=true);
-    //
-    translate([-35, 0, 25])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
-    translate([-25, 0, 25])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
-    translate([-15, 0, 25])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
-    translate([-35, 0, 15])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
-    translate([-25, 0, 15])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
-    translate([-15, 0, 15])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    translate([0, 0, 10-7/2])cube([17, 16, 7],center=true);
     }
 
-    //above board: -20
-    //translate([-20, -12, 6])xh254_3pin_female();
-
-    //above board: 0
+    //from cable to entry: 0.6, 8, 6.8, 0.6
+    translate([ 0, 8-0.3, 10-5/2])cube([12, 0.6, 5],center=true);
+    translate([ 0, 8-0.6-8/2, 10.01-6.2/2])cube([13.4, 8, 6.2],center=true);
+    translate([ 0, 8-0.6-8-6.8/2, 10.01-7/2])cube([15.2, 6.8, 7.03],center=true);
+    translate([ 0, -8+0.3, 10.01-6/2])cube([14, 0.6, 6],center=true);
+    }
+}
+module xh254_5pin_male(){
     difference(){
-        translate([0, -20, 20])switchport();
-        //cable through it
-        translate([0, -20, 30])cube([0.2, 20, 10],center=true);
+    union(){
+    translate([0, 0, 10-9/2])cube([19, 20, 9],center=true);
+    }
+    //cable
+    translate([0,21/2-1/2, 10-5/2])cube([10, 1.01, 5.01],center=true);
+    //
+    translate([0, 0, 10-2])cube([17.4, 20, 4.01],center=true);
+    //
+    hull(){
+    translate([0, 0, 6])cube([17.4, 19.8, 0.01],center=true);
+    translate([0, 0, 1.5])cube([17.4, 18.6, 0.01],center=true);
+    }
+    //head
+    translate([0,-21/2+1/2, 10-7/2])cube([14,1.01,7.01],center=true);
+    }
+}
+module mainbody_power(){
+    type=4;     //batt: 2 or 4
+
+    //----board @ 30----
+    difference(){
+    translate([0,20-2-4,40-9-0.99/2])cube([80,8,0.99],center=true);
+    translate([0,20-2-1,40-9-0.99/2])cube([20,2,10],center=true);
     }
 
-    //above board: 20
-    translate([ 20, -10, 9])xh254_3pin_male();
+    //----above board----
+    //bulk
+    difference(){
+    translate([-40+7, -10, 15])cube([14, 20, 10],center=true);
+    translate([-38+8, 0, 14])cube([16.1, 40, 8],center=true);
+    }
 
-    //board
+    if(type==2){
+        //switch
+        difference(){
+            translate([0, -20, 20])switchport();
+            //cable through it
+            translate([0, -20, 30])cube([0.2, 20, 10],center=true);
+        }
+
+        //xh254
+        translate([ 23, -10, 9])xh254_3pin_male();
+    }
+    else{
+        //switch: 0
+        difference(){
+            translate([-15/2+1.2, -20, 20])switchport();
+            translate([-15/2+1.2+6.9, -20, 20])cube([(15-12.6)/2, 20, 22],center=true);
+        }
+
+        //switch 1
+        difference(){
+            translate([15/2-1.2, -20, 20])switchport();
+            translate([15/2-1.2-6.9, -20, 20])cube([(15-12.6)/2, 20, 22],center=true);
+        }
+
+        //xh254
+        translate([ 24, -8, 9])xh254_5pin_male();
+    }
+    
+    
+    //----board @ 10----
     difference(){
         translate([0,0,9+0.99/2])cube([80,40,0.99],center=true);
         //pcb
         translate([0,20-2/2,10])cube([60,2,10],center=true);
         //hole to below level
-        translate([0,20-10/2,9+0.4/2])cube([10,10,10],center=true);
+        translate([0,20-10/2,9+0.4/2])cube([16,10,10],center=true);
         //xt254
         //translate([-20, -12, 10])cube([12, 16, 10],center=true);
         //switchport
-        translate([0, -20+10/2, 10])cube([15, 10, 22],center=true);
+        if(type==2){
+            translate([0, -20+8/2, 10])cube([6, 8, 22],center=true);
+        }
+        else{
+            translate([0, -20+8/2, 10])cube([20, 8, 22],center=true);
+        }
     }
 
-    //below board: batt out
-    translate([-10.2, 0, 10])rotate([0,0,90])mirror([0,0,1])xh254_3pin_male();
-    //below board: power in
-    translate([8.2, 0, 9-1/2])cube([16, 14, 1],center=true);
-    translate([8.2, 0, 11])rotate([0,0,-90])mirror([0,0,1])xh254_3pin_female();
-
+    
+    
+    //----below board----
+    translate([-15,-20+2+0.5, 4.5])cube([25, 1, 9],center=true);
+    translate([ 15,-20+2+0.5, 4.5])cube([25, 1, 9],center=true);
+    translate([-15, 20-2-0.5, 4.5])cube([25, 1, 9],center=true);
+    translate([ 15, 20-2-0.5, 4.5])cube([25, 1, 9],center=true);
+    if(type==2){
+        //batt out
+        translate([-10.2, 0, 10])rotate([0,0,90])mirror([0,0,1])xh254_3pin_male();
+        //power in
+        translate([8.2, 0, 9-1/2])cube([16, 14, 1],center=true);
+        translate([8.2, 0, 11])rotate([0,0,-90])mirror([0,0,1])xh254_3pin_female();
+    }
+    else{
+        //batt out
+        translate([-10.2, 0, 10])rotate([0,0,90])mirror([0,0,1])xh254_5pin_male();
+        //power in
+        translate([8.2, 0, 9-1.5/2])cube([16, 17, 1.51],center=true);
+        translate([8.2, 0, 10+0.5])rotate([0,0,-90])mirror([0,0,1])xh254_5pin_female();
+    }
 
 
 
@@ -2015,9 +2075,9 @@ color([0.7,0.2,0.9,0.8])translate([ 0,0,-25])inner_bot();
 
 
 //--------for print--------
-logicboard_esp32s3_muselab();
+//logicboard_esp32s3_muselab();
 
-//mainbody_power();
+mainbody_power();
 //mainbody_drv8833_help();
 
 //bot_motorseat();
@@ -2025,4 +2085,7 @@ logicboard_esp32s3_muselab();
 //outer_top();
 //translate([ 0,0, -25])inner_top();
 //rotate([180,0,0])inner_bot();
+
+
+//--------test---------
 //xh254_3pin_male();

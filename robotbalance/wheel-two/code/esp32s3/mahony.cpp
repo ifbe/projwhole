@@ -2,8 +2,6 @@
 //origin code: https://github.com/PaulStoffregen/MahonyAHRS
 //axis system: east-north-sky, right-front-top
 //
-#define twoKp 2.0
-#define twoKi 0.05
 //
 static float q[4];
 #define qx q[0]
@@ -12,7 +10,19 @@ static float q[4];
 #define qw q[3]
 //
 static float integralx, integraly, integralz;
-
+//
+static float twoKp = 8;
+static float twoKi = 0.5;
+void mahony_getpid(float* pid)
+{
+  pid[0] = twoKp;
+  pid[1] = twoKi;
+}
+void mahony_setpid(float* pid)
+{
+  twoKp = pid[0];
+  twoKi = pid[1];
+}
 
 
 

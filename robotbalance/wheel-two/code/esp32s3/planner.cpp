@@ -58,6 +58,8 @@ void axismulangle2axisandangle(float* a, float* q)
   q[3] = angle;
 }
 
+static float bodyspace_sensorattitude[4] = {0,0,0,1};
+//{0.07465827159691414, -0.04955423236032814, 0, 0.9959771686827665};
 void computeeulerian(float* qin, float* vec)
 {
   //1.rmat_sensortoworld = worldspace_sensorattitude = q
@@ -67,7 +69,6 @@ void computeeulerian(float* qin, float* vec)
   //3.rmat_bodytoworld * rmat_sensortobody = rmat_sensortoworld
   //  rmat_bodytoworld = rmat_sensortoworld * rmat_sensortobody^
   //  worldspace_bodyattitude = q * bodyspace_sensorattitude^
-  float bodyspace_sensorattitude[4] = {0.07465827159691414, -0.04955423236032814, 0, 0.9959771686827665};
   float sensorspace_bodyattitude[4] = {-bodyspace_sensorattitude[0], -bodyspace_sensorattitude[1], -bodyspace_sensorattitude[2], bodyspace_sensorattitude[3]};
   float q[4];
   quaternion_multiplyfrom(q, qin, sensorspace_bodyattitude);
@@ -147,7 +148,7 @@ void computepid(float* in, float* out, long ms)
   speedring(&wantdeg);
 
   //pitch -> force
-  pitchring(0+wantdeg, deg, out, ms);
+  pitchring(-2+wantdeg, deg, out, ms);
 
   //yaw -> force
 }
