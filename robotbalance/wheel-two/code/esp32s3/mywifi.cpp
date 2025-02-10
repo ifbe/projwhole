@@ -4,6 +4,7 @@
 #include "mystor.h"
 #include "battery.h"
 #include "mahony.h"
+#include "planner.h"
 
 const char* ap_ssid = "esp32s3_muselab";
 const char* ap_pass = "12345678";
@@ -101,9 +102,63 @@ void handle_mahony_save() {
 void handle_planner() {
   Serial.println(__FUNCTION__);
 
+  float yaw_pid[3];
+  planner_yawring_getpid(yaw_pid);
+
+  float pitch_pid[3];
+  planner_pitchring_getpid(pitch_pid);
+
+  float speed_pid[3];
+  planner_speedring_getpid(speed_pid);
+
   String html;
   build_page_head(html);
+  html += "<form action='/plannersave' method='POST'>";
+  html += "yaw_pid: ";
+  html += "<input type='text' name='yaw_p' value='" + String(yaw_pid[0]) + "'>";
+  html += "<input type='text' name='yaw_i' value='" + String(yaw_pid[1]) + "'>";
+  html += "<input type='text' name='yaw_d' value='" + String(yaw_pid[2]) + "'>";
+  html += "<br>";
+  html += "pitch_pid: ";
+  html += "<input type='text' name='pitch_p' value='" + String(pitch_pid[0]) + "'>";
+  html += "<input type='text' name='pitch_i' value='" + String(pitch_pid[1]) + "'>";
+  html += "<input type='text' name='pitch_d' value='" + String(pitch_pid[2]) + "'>";
+  html += "<br>";
+  html += "speed_pid: ";
+  html += "<input type='text' name='speed_p' value='" + String(speed_pid[0]) + "'>";
+  html += "<input type='text' name='speed_i' value='" + String(speed_pid[1]) + "'>";
+  html += "<input type='text' name='speed_d' value='" + String(speed_pid[2]) + "'>";
+  html += "<br>";
+  html += "<input type='submit' value='Save'>";
+  html += "</form>";
   server.send(200, "text/html", html);
+}
+
+void handle_planner_save() {
+  Serial.println(__FUNCTION__);
+
+  float pid[3];
+
+  pid[0] = server.arg("yaw_p").toFloat();
+  pid[1] = server.arg("yaw_i").toFloat();
+  pid[2] = server.arg("yaw_d").toFloat();
+  Serial.printf("planner yawring setpid=%f,%f,%f\n", pid[0], pid[1], pid[2]);
+  planner_yawring_setpid(pid);
+
+  pid[0] = server.arg("pitch_p").toFloat();
+  pid[1] = server.arg("pitch_i").toFloat();
+  pid[2] = server.arg("pitch_d").toFloat();
+  Serial.printf("planner pitchring setpid=%f,%f,%f\n", pid[0], pid[1], pid[2]);
+  planner_pitchring_setpid(pid);
+
+  pid[0] = server.arg("speed_p").toFloat();
+  pid[1] = server.arg("speed_i").toFloat();
+  pid[2] = server.arg("speed_d").toFloat();
+  Serial.printf("planner speedring setpid=%f,%f,%f\n", pid[0], pid[1], pid[2]);
+  planner_speedring_setpid(pid);
+
+  server.sendHeader("Location", "/planner");
+  server.send(303);
 }
 
 void handle_led() {
@@ -230,6 +285,7 @@ void initwifi()
   server.on("/mahonysave", handle_mahony_save);
 
   server.on("/planner", handle_planner);
+  server.on("/plannersave", handle_planner_save);
 
   server.on("/led", handle_led);
 

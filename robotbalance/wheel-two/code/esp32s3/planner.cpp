@@ -99,6 +99,8 @@ float pseudospeed()
 
 static float wantspeed = 0;
 static float speed_kp = -0.002;
+static float speed_ki = 0;
+static float speed_kd = 0;
 void speedring(float* wantdeg)
 {
   float currspeed = pseudospeed();
@@ -112,28 +114,36 @@ void speedring(float* wantdeg)
   *wantdeg = val;
 }
 
-float angle_kp = 80;
-float angle_kd = 0;
-float angle_preverr = 0;
-float angle_prevms = 0;
+float pitch_kp = 80;
+float pitch_ki = 0;
+float pitch_kd = 0;
+float pitch_preverr = 0;
+float pitch_prevms = 0;
 void pitchring(float wantdeg, float currdeg, float* out, long ms)
 {
   float err = wantdeg - currdeg;
 
   float vd = 0;
-  if(angle_prevms){
-    float dt = ms - angle_prevms;
-    if(dt>0)vd = (err-angle_preverr)/dt;
+  if(pitch_prevms){
+    float dt = ms - pitch_prevms;
+    if(dt>0)vd = (err-pitch_preverr)/dt;
   }
-  float val = err*angle_kp + vd*angle_kd;
+  float val = err*pitch_kp + vd*pitch_kd;
   out[0] += val;
   out[1] += val;
 
-  angle_preverr = err;
-  angle_prevms = ms;
+  pitch_preverr = err;
+  pitch_prevms = ms;
 
   //motor pwm as pseudo speed
   prevspeed = val;
+}
+
+float yaw_kp = 80;
+float yaw_ki = 0;
+float yaw_kd = 0;
+void yawring()
+{
 }
 
 void computepid(float* in, float* out, long ms)
@@ -151,4 +161,46 @@ void computepid(float* in, float* out, long ms)
   pitchring(-2+wantdeg, deg, out, ms);
 
   //yaw -> force
+}
+
+
+void planner_speedring_getpid(float* pid)
+{
+  pid[0] = speed_kp;
+  pid[1] = speed_ki;
+  pid[2] = speed_kd;
+}
+void planner_speedring_setpid(float* pid)
+{
+  speed_kp = pid[0];
+  speed_ki = pid[1];
+  speed_kd = pid[2];
+}
+
+
+void planner_pitchring_getpid(float* pid)
+{
+  pid[0] = pitch_kp;
+  pid[1] = pitch_ki;
+  pid[2] = pitch_kd;
+}
+void planner_pitchring_setpid(float* pid)
+{
+  pitch_kp = pid[0];
+  pitch_ki = pid[1];
+  pitch_kd = pid[2];
+}
+
+
+void planner_yawring_getpid(float* pid)
+{
+  pid[0] = yaw_kp;
+  pid[1] = yaw_ki;
+  pid[2] = yaw_kd;
+}
+void planner_yawring_setpid(float* pid)
+{
+  yaw_kp = pid[0];
+  yaw_ki = pid[1];
+  yaw_kd = pid[2];
 }
