@@ -1,4 +1,5 @@
 
+#include "config.h"
 #include <BLEDevice.h>
 #include <BLEUtils.h>
 #include <BLEServer.h>
@@ -8,7 +9,7 @@
 
 void initble()
 {
-  BLEDevice::init("esp32s3_muselab");
+  BLEDevice::init(BOARDNAME);
   BLEServer *pServer = BLEDevice::createServer();
   BLEService *pService = pServer->createService(SERVICE_UUID);
   BLECharacteristic *pCharacteristic = pService->createCharacteristic(

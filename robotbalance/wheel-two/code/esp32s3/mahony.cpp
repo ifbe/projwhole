@@ -23,6 +23,13 @@ void mahony_setpid(float* pid)
   twoKp = pid[0];
   twoKi = pid[1];
 }
+void mahony_getq(float* o)
+{
+  o[0] = qx;
+  o[1] = qy;
+  o[2] = qz;
+  o[3] = qw;
+}
 
 
 
@@ -117,13 +124,6 @@ void mahony_update6(
 	mahony_update3(gx, gy, gz, deltaT);
 }
 
-void mahony_getq(float* o)
-{
-  o[0] = qx;
-  o[1] = qy;
-  o[2] = qz;
-  o[3] = qw;
-}
 void mahony_init()
 {
   qx = qy = qz = 0.0;

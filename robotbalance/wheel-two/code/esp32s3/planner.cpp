@@ -139,7 +139,7 @@ void pitchring(float wantdeg, float currdeg, float* out, long ms)
   prevspeed = val;
 }
 
-float yaw_kp = 80;
+float yaw_kp = 0;
 float yaw_ki = 0;
 float yaw_kd = 0;
 void yawring()

@@ -1,16 +1,13 @@
+#include "config.h"
 #include <Arduino.h>
-#define PIN_LEFT_P 39
-#define PIN_LEFT_N 40
-#define PIN_LEFT_EN 41
 
-#define PIN_RIGHT_P 9
-#define PIN_RIGHT_N 10
-#define PIN_RIGHT_EN 11
 
+
+
+#if MOTORTYPE_SELECT==MOTORTYPE_DRV8833
 #define PWM_FREQ 1000
 #define PWM_RESOLUTION 8
-
-void initmotor()
+void motor_init()
 {
   ledcAttach(PIN_LEFT_P, PWM_FREQ, PWM_RESOLUTION);
   ledcAttach(PIN_LEFT_N, PWM_FREQ, PWM_RESOLUTION);
@@ -20,8 +17,7 @@ void initmotor()
   ledcAttach(PIN_RIGHT_N, PWM_FREQ, PWM_RESOLUTION);
   pinMode(PIN_RIGHT_EN, OUTPUT);
 }
-
-void drv8833_output(float fl, float fr)
+void motor_output(float fl, float fr)
 {
   if(abs(fl)<0.001){
     digitalWrite(PIN_LEFT_EN, 0);
@@ -65,3 +61,16 @@ void drv8833_output(float fl, float fr)
     digitalWrite(PIN_RIGHT_EN, 1);
   }
 }
+#endif
+
+
+
+
+#if MOTORTYPE_SELECT==MOTORTYPE_DRV8825
+void motor_init()
+{
+}
+void motor_output(float fl, float fr)
+{
+}
+#endif

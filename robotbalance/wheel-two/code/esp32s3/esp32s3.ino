@@ -1,5 +1,4 @@
-#include <Wire.h>
-#include <MPU6050.h>
+#include "imu.h"
 #include "mahony.h"
 #include "planner.h"
 #include "actuator.h"
@@ -7,7 +6,6 @@
 #include "mywifi.h"
 #include "myble.h"
 
-MPU6050 mpu;
 static unsigned long oldtime;
 static unsigned long fusioncount;
 
@@ -39,25 +37,15 @@ void radian2degree(float* vec)
 void loop()
 {
   unsigned long ms = millis();
-  //Serial.printf("%f,%f\n", mpu.get_acce_resolution(), mpu.get_gyro_resolution() );
-
-  int16_t ax, ay, az, gx, gy, gz;
-  mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
-  //Serial.printf("raw: a=(%d,%d,%d) g=(%d,%d,%d) t=%d\n", ax,ay,az, gx,gy,gz, ms);
-
-  float fax, fay, faz, fgx, fgy, fgz;
-  fax = (-2*ax) * 9.8*2 / 32768;    //bug_to_raw * raw_to_metersec2
-  fay = (-2*ay) * 9.8*2 / 32768;
-  faz = (-2*az) * 9.8*2 / 32768;
-  fgx = (gx) * (1000.0 / 32768) * PI / 180;   //bug_to_raw * raw_to_deg * deg_to_rad
-  fgy = (gy) * (1000.0 / 32768) * PI / 180;
-  fgz = (gz) * (1000.0 / 32768) * PI / 180;
-  //Serial.printf("std: a=(%f,%f,%f) g=(%f,%f,%f) t=%d\n", fax,fay,faz, fgx,fgy,fgz, ms);
-
   float deltaT = (ms-oldtime)*0.001;
+  //Serial.printf("%f,%f\n", mpu.get_acce_resolution(), mpu.get_gyro_resolution() );
   oldtime = ms;
 
-  mahony_update6(fgx, fgy, fgz, fax, fay, faz, deltaT);
+  float gyr[3];
+  float acc[3];
+  imu_read(gyr, acc);
+
+  mahony_update6(gyr[0], gyr[1], gyr[2], acc[0], acc[1], acc[2], deltaT);
   if(fusioncount <= 200)fusioncount++;
 
   float q[4];
@@ -78,7 +66,7 @@ void loop()
     computepid(vec, val, ms);
     //Serial.printf("%f -> %f,%f\n", vec[1], val[0], val[1]);
 
-    drv8833_output(val[0], val[1]);
+    motor_output(val[0], val[1]);
   }
 
   pollbattery();
@@ -101,13 +89,11 @@ void setup()
 
   initbattery();
 
-  initmotor();
-
-  Wire.begin(18, 17);  //SCL = 17, SDA = 18
-
-  mpu.initialize(ACCEL_FS::A2G, GYRO_FS::G1000DPS);
+  motor_init();
 
   mahony_init();
+
+  imu_init();
 
   //delay(3000);
 

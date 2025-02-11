@@ -1,3 +1,4 @@
+#include "config.h"
 #include <WiFi.h>
 #include <WebServer.h>
 #include <string.h>
@@ -6,7 +7,7 @@
 #include "mahony.h"
 #include "planner.h"
 
-const char* ap_ssid = "esp32s3_muselab";
+const char* ap_ssid = BOARDNAME;
 const char* ap_pass = "12345678";
 
 String sta_ssid = "";
@@ -180,14 +181,16 @@ void handle_motor() {
 void handle_battery() {
   Serial.println(__FUNCTION__);
 
-  float v1,v2;
-  getvolt(&v1, &v2);
+  float volt[4];
+  getvolt(volt);
 
   String html;
   build_page_head(html);
   html += "<pre>";
-  html += "v1=" + String(v1) + "\n";
-  html += "v2=" + String(v2) + "\n";
+  html += "v1=" + String(volt[0]) + "\n";
+  html += "v2=" + String(volt[1]) + "\n";
+  html += "v3=" + String(volt[2]) + "\n";
+  html += "v4=" + String(volt[3]) + "\n";
   html += "</pre>";
   server.send(200, "text/html", html);
 }
