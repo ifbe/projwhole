@@ -1818,7 +1818,7 @@ module mainbody_power(){
     //bulk
     difference(){
     translate([-40+7, -10, 15])cube([14, 20, 10],center=true);
-    translate([-38+8, 0, 14])cube([16.1, 40, 8],center=true);
+    translate([-38+8, 0, 10+9/2])cube([16.1, 40, 9],center=true);
     }
 
     if(type==2){
@@ -1846,7 +1846,7 @@ module mainbody_power(){
         }
 
         //xh254
-        translate([ 24, -8, 9])xh254_5pin_male();
+        translate([ 22.5, 0, 9])xh254_5pin_male();
     }
     
     
@@ -1856,7 +1856,7 @@ module mainbody_power(){
         //pcb
         translate([0,20-2/2,10])cube([60,2,10],center=true);
         //hole to below level
-        translate([0,20-10/2,9+0.4/2])cube([16,10,10],center=true);
+        translate([0,20-10/2,9+0.4/2])cube([20,10,10],center=true);
         //xt254
         //translate([-20, -12, 10])cube([12, 16, 10],center=true);
         //switchport
@@ -1871,10 +1871,10 @@ module mainbody_power(){
     
     
     //----below board----
-    translate([-15,-20+2+0.5, 4.5])cube([25, 1, 9],center=true);
-    translate([ 15,-20+2+0.5, 4.5])cube([25, 1, 9],center=true);
-    translate([-15, 20-2-0.5, 4.5])cube([25, 1, 9],center=true);
-    translate([ 15, 20-2-0.5, 4.5])cube([25, 1, 9],center=true);
+    translate([-20,-20+2+0.5, 4.5])cube([20, 1, 9],center=true);
+    translate([ 20,-20+2+0.5, 4.5])cube([20, 1, 9],center=true);
+    translate([-20, 20-2-0.5, 4.5])cube([20, 1, 9],center=true);
+    translate([ 20, 20-2-0.5, 4.5])cube([20, 1, 9],center=true);
     if(type==2){
         //batt out
         translate([-10.2, 0, 10])rotate([0,0,90])mirror([0,0,1])xh254_3pin_male();

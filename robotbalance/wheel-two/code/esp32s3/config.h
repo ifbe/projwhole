@@ -94,10 +94,10 @@
 #if BATTTYPE_SELECT==BATTTYPE_2S
 #define PIN_VOLT1 1
 #define PIN_VOLT2 2
-#define r1_up 100000
-#define r1_dn 200000
-#define r2_up 200000
-#define r2_dn 100000
+#define r1_up  50000  //50k
+#define r1_dn 100000  //100k  //4.2*100/150=2.8
+#define r2_up 100000  //100k
+#define r2_dn  50000  //50k   //8.4*50/150=2.8
 #endif
 
 #if BATTTYPE_SELECT==BATTTYPE_4S
@@ -105,12 +105,12 @@
 #define PIN_VOLT2 5
 #define PIN_VOLT3 6
 #define PIN_VOLT4 7
-#define r1_up 100000
-#define r1_dn 200000
-#define r2_up 200000
-#define r2_dn 100000
-#define r3_up 200000
-#define r3_dn  50000  //two 100k in parallel
-#define r4_up 200000
-#define r4_dn  33333  //three 100k in parallel
+#define r1_up  50000  //50k
+#define r1_dn 100000  //100k  //4.2*100/150=2.8
+#define r2_up 100000  //100k
+#define r2_dn  50000  //50k   //8.4*50/150=2.8
+#define r3_up 100000  //100k
+#define r3_dn  25000  //two 50k in parallel //12.6*25/125=2.52
+#define r4_up 100000  //100k
+#define r4_dn  16666  //three 50k in parallel //16.8*16666/(100+16666)=2.4
 #endif
