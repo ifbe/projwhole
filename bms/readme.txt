@@ -1,0 +1,1 @@
+https://www.auto-testing.net/news/show-109708.html
