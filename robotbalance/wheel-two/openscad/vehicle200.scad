@@ -1550,12 +1550,18 @@ module mainbody_rpi(){
         translate([0,0,40/2])cube([60,1000,32],center=true);
     }
 }
+
+SOCKETWIDTH_LEFTBOT = 36;
+SOCKETWIDTH_LEFTTOP = 30;
+SOCKETWIDTH_RIGHT = 24;
 module mainbody_drv8833_help(){
     difference(){
         union(){
-        translate([0, 0, -20/2])cube([22-0.2, 24, 20],center=true);
-        translate([-10, 0, - 5])cube([1.8, 36-0.2, 10],center=true);
-        translate([-10, 0, -15])cube([1.8, 30-0.2, 10],center=true);
+        //left
+        translate([-10, 0, - 5])cube([1.8, SOCKETWIDTH_LEFTBOT-0.2, 10],center=true);
+        translate([-10, 0, -15])cube([1.8, SOCKETWIDTH_LEFTTOP-0.2, 10],center=true);
+        //right
+        translate([0, 0, -20/2])cube([22-0.2, SOCKETWIDTH_RIGHT-0.2, 20],center=true);
         }
         translate([0, 10/2, -5])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
         translate([0,-10/2, -5])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
@@ -1581,10 +1587,18 @@ module mainbody_drv8833_help(){
 module mainbody_drv8825_help(){
     difference(){
         union(){
-        translate([(15.4+1.6)/2, 0, -20/2])cube([15.4+1.6, 20.4+1.6*2, 20],center=true);
-        translate([-1.8/2, 0, - 5])cube([1.8, 36-0.2, 10],center=true);
-        translate([-1.8/2, 0, -15])cube([1.8, 30-0.2, 10],center=true);
+        //left
+        translate([-1.8/2, 0, - 5])cube([1.8, SOCKETWIDTH_LEFTBOT-0.2, 10],center=true);
+        translate([-1.8/2, 0, -15])cube([1.8, SOCKETWIDTH_LEFTTOP-0.2, 10],center=true);
+        //right
+        translate([(15.6+1.6*2)/2, 0, -20/2])cube([15.6+1.6*2, SOCKETWIDTH_RIGHT-0.2, 20],center=true);
         }
+        //hole.y
+        translate([ 5, 10/2, -5])rotate([90,0,0])cylinder(1000, r=1.6,center=true,$fn=50);
+        translate([15, 10/2, -5])rotate([90,0,0])cylinder(1000, r=1.6,center=true,$fn=50);
+        translate([ 5, 10/2,-15])rotate([90,0,0])cylinder(1000, r=1.6,center=true,$fn=50);
+        translate([15, 10/2,-15])rotate([90,0,0])cylinder(1000, r=1.6,center=true,$fn=50);
+        //hole.x
         translate([0, 10/2, -5])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
         translate([0,-10/2, -5])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
         translate([0, 30/2, -5])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
@@ -1594,14 +1608,19 @@ module mainbody_drv8825_help(){
         translate([0, 30/2, -15])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
         translate([0,-30/2, -15])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
         //top
-        translate([15.4/2, 0, -1/2])cube([3, 20.4, 3.01],center=true);
-        translate([15.4/2, 0, -1/2])cube([15.4, 20.4, 1.01],center=true);
-        //bot mid
-        translate([15.4/2, 0, -20+18/2])cube([10, 20.4, 18.01],center=true);
-        //bot side
-        translate([     2.8/2, 0, -19/2])cube([2.8, 20.4, 19.01],center=true);
-        translate([15.4-2.8/2, 0, -19/2])cube([2.8, 20.4, 19.01],center=true);
-
+        translate([1.6+15.6/2, 0, 0.01-1.6/2])cube([15.6, 20.4, 1.6],center=true);
+        //mid
+        translate([1.6+15.6/2, 0, -20+18/2])cube([10, 21, 18.01],center=true);
+        //bot
+        for(j=[-4:1:3])translate([1.6+15.6/2, 1.27*(j*2+1), -20])cube([15.6, 1.3, 6],center=true);
+        //cable 8x2
+        translate([1.6+     2.8/2, 0, -18/2])cube([2.8, 21.2, 18.01],center=true);
+        translate([1.6+15.6-2.8/2, 0, -18/2])cube([2.8, 21.2, 18.01],center=true);
+        //xh254
+        translate([1.6+15.6, 0, -12/2])cube([10, 13, 12.01],center=true);
+        //8pin
+        //translate([-1.8/2, 0, -20+3.6/2])cube([1.8, 18, 99],center=true);
+        for(j=[-4:1:3])translate([-1.8/2, 1.27*(j*2+1), -20+3.6/2])cube([1.81, 1.3, 99],center=true);
     }
 }
 module mainbody_drv8833(){
@@ -1609,8 +1628,8 @@ module mainbody_drv8833(){
     translate([ 40+22/2, 0, 40])mainbody_drv8833_help();
 }
 module mainbody_drv8825(){
-    translate([-40-22/2, 0, 40])mirror([1,0,0])mainbody_drv8825_help();
-    translate([ 40+22/2, 0, 40])mainbody_drv8825_help();
+    translate([-40, 0, 40])mirror([1,0,0])mainbody_drv8825_help();
+    translate([ 40, 0, 40])mainbody_drv8825_help();
 }
 module switchport(){
     difference(){
