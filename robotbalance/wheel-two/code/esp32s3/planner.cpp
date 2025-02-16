@@ -1,6 +1,5 @@
 #include <Arduino.h>
-//#include <math.h>
-#include "actuator.h"
+#include "config.h"
 
 void quaternion_multiplyfrom(float* o, float* l, float* r)
 {
@@ -58,7 +57,7 @@ void axismulangle2axisandangle(float* a, float* q)
   q[3] = angle;
 }
 
-static float bodyspace_sensorattitude[4] = {0,0,0,1};
+static float bodyspace_sensorattitude[4] = SENSORINBODYSPACE;
 //{0.07465827159691414, -0.04955423236032814, 0, 0.9959771686827665};
 void computeeulerian(float* qin, float* vec)
 {
@@ -148,7 +147,7 @@ void yawring()
 
 void computepid(float* in, float* out, long ms)
 {
-  float deg = in[1];
+  float deg = -in[0];
 
   out[0] = out[1] = 0;
   if(abs(deg)>60)return;

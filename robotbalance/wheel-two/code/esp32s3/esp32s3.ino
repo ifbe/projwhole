@@ -59,7 +59,7 @@ void loop()
   radian2degree(vec);
   Serial.printf("%d: %f,%f,%f\n", ms, vec[0], vec[1], vec[2]);
 
-  val2led(vec[1]);
+  val2led(vec[0]);  //pitch
 
   if(fusioncount >= 200){
     float val[2];

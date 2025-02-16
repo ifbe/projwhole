@@ -1461,6 +1461,32 @@ module logicboard_esp32s3_muselab(){
     }
 }
 
+module logicboard_esp32s3_weact(){
+    //translate([-50,0,0])helpfixesp32();
+
+    //
+    difference(){
+    translate([0, 0, 40/2])cube([80-0.2, 40-0.2, 40-0.2],center=true);
+    //
+    translate([0, 0, 40])cube([60, 30, 20],center=true);
+    translate([0, 0, 38-28/2])cube([80, 36-0.2, 28],center=true);
+    translate([0, 0, 20/2])cube([40, 99, 20],center=true);
+    //
+    translate([0, 0, 2+2/2])cube([99, 34, 2],center=true);
+    translate([0, 0, 10/2])cube([99, 30.6, 11],center=true);
+    //
+    //hole y
+    translate([-35, 0,35])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    translate([-25, 0,35])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    translate([ 25, 0,35])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    translate([ 35, 0,35])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    translate([-35, 0, 5])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    translate([-25, 0, 5])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    translate([ 25, 0, 5])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    translate([ 35, 0, 5])rotate([90,0,0])cylinder(99, r=1.6,center=true,$fn=50);
+    }
+}
+
 module mainbody_head(){
     difference(){
         union(){
@@ -1552,183 +1578,39 @@ module mainbody_drv8833_help(){
 
     }
 }
+module mainbody_drv8825_help(){
+    difference(){
+        union(){
+        translate([(15.4+1.6)/2, 0, -20/2])cube([15.4+1.6, 20.4+1.6*2, 20],center=true);
+        translate([-1.8/2, 0, - 5])cube([1.8, 36-0.2, 10],center=true);
+        translate([-1.8/2, 0, -15])cube([1.8, 30-0.2, 10],center=true);
+        }
+        translate([0, 10/2, -5])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
+        translate([0,-10/2, -5])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
+        translate([0, 30/2, -5])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
+        translate([0,-30/2, -5])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
+        translate([0, 10/2, -15])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
+        translate([0,-10/2, -15])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
+        translate([0, 30/2, -15])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
+        translate([0,-30/2, -15])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
+        //top
+        translate([15.4/2, 0, -1/2])cube([3, 20.4, 3.01],center=true);
+        translate([15.4/2, 0, -1/2])cube([15.4, 20.4, 1.01],center=true);
+        //bot mid
+        translate([15.4/2, 0, -20+18/2])cube([10, 20.4, 18.01],center=true);
+        //bot side
+        translate([     2.8/2, 0, -19/2])cube([2.8, 20.4, 19.01],center=true);
+        translate([15.4-2.8/2, 0, -19/2])cube([2.8, 20.4, 19.01],center=true);
+
+    }
+}
 module mainbody_drv8833(){
-    //drv8833
     translate([-40-22/2, 0, 40])mirror([1,0,0])mainbody_drv8833_help();
     translate([ 40+22/2, 0, 40])mainbody_drv8833_help();
-/*
-    //cube
-    difference(){
-        union(){
-        //
-        translate([ 60, 0,40/2])cube([40,40,40],center=true);
-        translate([-60, 0,40/2])cube([40,40,40],center=true);
-        }
-        //-top hole
-        for(t=[-60:120:70]){
-        translate([t+15, 15, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([t-15, 15, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([t+15,-15, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([t-15,-15, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        }
-        //-top
-        translate([ 40+22/2,0,0])cube([22,24,1000],center=true);
-        translate([-40-22/2,0,0])cube([22,24,1000],center=true);
-        //translate([ 80-2-16/2,0,0])cube([16,24,1000],center=true);
-        //translate([-80+2+16/2,0,0])cube([16,24,1000],center=true);
-        //-mid
-        translate([ 60, 0, 40/2])rotate([90,0,0])scale([1, 1, 1])cylinder(100, r=15,center=true,$fn=50);
-        translate([-60, 0, 40/2])rotate([90,0,0])scale([1, 1, 1])cylinder(100, r=15,center=true,$fn=50);
-        translate([ 60, 0,40/2])cube([36,36,36],center=true);
-        translate([-60, 0,40/2])cube([36,36,36],center=true);
-        translate([ 60, 0,35/2])cube([41,24,35],center=true);
-        translate([-60, 0,35/2])cube([41,24,35],center=true);
-        //-bot side
-        translate([ 40+5/2, 0,10/2])cube([5,41,10],center=true);
-        translate([-40-5/2, 0,10/2])cube([5,41,10],center=true);
-        translate([ 80-5/2, 0,10/2])cube([5,41,10],center=true);
-        translate([-80+5/2, 0,10/2])cube([5,41,10],center=true);
-        //-bot mid
-        translate([ 60, 0,0])cube([41,24,9],center=true);
-        translate([-60, 0,0])cube([41,24,9],center=true);
-        translate([ 60, 0,1.2/2])cube([41,41,1.2],center=true);
-        translate([-60, 0,1.2/2])cube([41,41,1.2],center=true);
-    }
-    */
-    
-    /*
-    //connect
-    difference(){
-        union(){
-        translate([ 40,  20+2/2,40/2])cube([20,2,20],center=true);
-        translate([ 40, -20-2/2,40/2])cube([20,2,20],center=true);
-        translate([-40,  20+2/2,40/2])cube([20,2,20],center=true);
-        translate([-40, -20-2/2,40/2])cube([20,2,20],center=true);
-        }
-        translate([ 45, 0, 15])rotate([90,0,0])cylinder(100, r=1.6,center=true,$fn=50);
-        translate([ 45, 0, 25])rotate([90,0,0])cylinder(100, r=1.6,center=true,$fn=50);
-        translate([ 35, 0, 15])rotate([90,0,0])cylinder(100, r=1.6,center=true,$fn=50);
-        translate([ 35, 0, 25])rotate([90,0,0])cylinder(100, r=1.6,center=true,$fn=50);
-        translate([-35, 0, 25])rotate([90,0,0])cylinder(100, r=1.6,center=true,$fn=50);
-        translate([-35, 0, 15])rotate([90,0,0])cylinder(100, r=1.6,center=true,$fn=50);
-        translate([-45, 0, 25])rotate([90,0,0])cylinder(100, r=1.6,center=true,$fn=50);
-        translate([-45, 0, 15])rotate([90,0,0])cylinder(100, r=1.6,center=true,$fn=50);
-    }*/
 }
 module mainbody_drv8825(){
-}
-module mainbody_power222(){
-    //top
-    difference(){
-        union(){
-        translate([0,0,40-2/2])cube([80,40,2],center=true);
-        }
-        //translate([  0,0,0])cylinder(1000, r=15,center=true,$fn=50);
-        translate([0,0,2/2])cube([60,30,1000],center=true);
-        /*
-        translate([ 40+15/2,0,0])cube([15,24,1000],center=true);
-        translate([-40-15/2,0,0])cube([15,24,1000],center=true);
-        translate([ 70,0,0])cube([20,24,1000],center=true);
-        translate([-70,0,0])cube([20,24,1000],center=true);
-        */
-        for(t=[-40:70:30]){
-        translate([t+5, 15, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([t+5,  5, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([t+5,- 5, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([t+5,-15, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        }/*
-        for(t=[-60:120:70]){
-        translate([t+15, 15, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([t-15, 15, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([t+15,-15, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([t-15,-15, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        }*/
-    }
-
-    //nearfar
-    difference(){
-        union(){
-        //far top
-        translate([0, 20-2/2, 25])cube([80,2,30],center=true);
-        //near mid
-        translate([0, 20-2/2, 20])cube([74,2,40],center=true);
-        //near top
-        translate([0,-20+2/2, 25])cube([80,2,30],center=true);
-        //near mid
-        translate([0,-20+2/2, 20])cube([74,2,40],center=true);
-        }
-        //
-        translate([-30, 0, 40/2])rotate([90,0,0])cylinder(100, r=10,center=true,$fn=50);
-        translate([  0, 0, 40/2])rotate([90,0,0])cylinder(100, r=10,center=true,$fn=50);
-        translate([ 30, 0, 40/2])rotate([90,0,0])cylinder(100, r=10,center=true,$fn=50);
-        //
-        for(t=[-40:10:30]){
-        translate([t+5, 0, 70/2])rotate([90,0,0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([t+5, 0, 50/2])rotate([90,0,0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([t+5, 0, 30/2])rotate([90,0,0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([t+5, 0, 10/2])rotate([90,0,0])cylinder(1000, r=1.6,center=true,$fn=50);
-        }
-    }
-
-    //leftright
-    difference(){
-        union(){
-        translate([-40+2/2, 0,35])cube([2,40,10],center=true);
-        translate([ 40-2/2, 0,35])cube([2,40,10],center=true);
-        //
-        translate([-40+2/2, 10,10/2])cube([2,14,10],center=true);
-        translate([-40+2/2,-10,10/2])cube([2,14,10],center=true);
-        translate([ 40-2/2, 10,10/2])cube([2,14,10],center=true);
-        translate([ 40-2/2,-10,10/2])cube([2,14,10],center=true);
-        }
-        translate([0, 30/2, 35])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([0, 10/2, 35])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([0,-10/2, 35])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([0,-30/2, 35])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
-        //
-        translate([0, 30/2, 10/2])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([0, 10/2, 10/2])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([0,-10/2, 10/2])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([0,-30/2, 10/2])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
-    }
-    difference(){
-        union(){
-        //right,far
-        translate([ 40+2/2, 20-2/2,20])cube([2,2,20],center=true);
-        translate([ 40+2+2/2, 20-7.9/2,25])cube([2,7.9,30],center=true);
-        //right,near
-        translate([ 40+2/2,-20+2/2,20])cube([2,2,20],center=true);
-        translate([ 40+2+2/2,-20+7.9/2,25])cube([2,7.9,30],center=true);
-        //left,far
-        translate([-40-2/2, 20-2/2,20])cube([2,2,20],center=true);
-        translate([-40-2-2/2, 20-7.9/2,25])cube([2,7.9,30],center=true);
-        //left,near
-        translate([-40-2/2,-20+2/2,20])cube([2,2,20],center=true);
-        translate([-40-2-2/2,-20+7.9/2,25])cube([2,7.9,30],center=true);
-        }
-        translate([0, 30/2, 35])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([0,-30/2, 35])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([0, 30/2, 25])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([0,-30/2, 25])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([0, 30/2, 15])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([0,-30/2, 15])rotate([0,90,0])cylinder(1000, r=1.6,center=true,$fn=50);
-    }
-
-    //bot.bot
-    difference(){
-        union(){
-        translate([0,0,2/2])cube([74,40,2],center=true);
-        translate([0, 10,2/2])cube([80,14,2],center=true);
-        translate([0,-10,2/2])cube([80,14,2],center=true);
-        }
-        translate([0,0,2/2])cube([60,30,1000],center=true);
-        for(t=[-40:10:30]){
-        translate([t+5, 15, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([t+5,  5, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([t+5,- 5, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        translate([t+5,-15, 0])cylinder(1000, r=1.6,center=true,$fn=50);
-        }
-    }
+    translate([-40-22/2, 0, 40])mirror([1,0,0])mainbody_drv8825_help();
+    translate([ 40+22/2, 0, 40])mainbody_drv8825_help();
 }
 module switchport(){
     difference(){
@@ -1817,8 +1699,8 @@ module mainbody_power(){
     //----above board----
     //bulk
     difference(){
-    translate([-40+7, -10, 15])cube([14, 20, 10],center=true);
-    translate([-38+8, 0, 10+9/2])cube([16.1, 40, 9],center=true);
+    translate([-40+27/2, -15, 15])cube([27, 10, 10],center=true);
+    translate([-39+27/2, -15, 10+9/2])cube([27, 40, 9],center=true);
     }
 
     if(type==2){
@@ -1836,17 +1718,19 @@ module mainbody_power(){
         //switch: 0
         difference(){
             translate([-15/2+1.2, -20, 20])switchport();
-            translate([-15/2+1.2+6.9, -20, 20])cube([(15-12.6)/2, 20, 22],center=true);
+            translate([-15/2+1.2+6.9, -20, 20])cube([(15-12.6)/2, 20, 32],center=true);
+            translate([0, -20, 30])cube([1, 20, 5],center=true);
         }
 
         //switch 1
         difference(){
             translate([15/2-1.2, -20, 20])switchport();
-            translate([15/2-1.2-6.9, -20, 20])cube([(15-12.6)/2, 20, 22],center=true);
+            translate([15/2-1.2-6.9, -20, 20])cube([(15-12.6)/2, 20, 32],center=true);
+            translate([0, -20, 30])cube([1, 20, 5],center=true);
         }
 
         //xh254
-        translate([ 22.5, 0, 9])xh254_5pin_male();
+        translate([ 22.5, -8, 9])xh254_5pin_male();
     }
     
     
@@ -2076,9 +1960,11 @@ color([0.7,0.2,0.9,0.8])translate([ 0,0,-25])inner_bot();
 
 //--------for print--------
 //logicboard_esp32s3_muselab();
+//logicboard_esp32s3_weact();
 
-mainbody_power();
+//mainbody_power();
 //mainbody_drv8833_help();
+mainbody_drv8825_help();
 
 //bot_motorseat();
 //bot_motorseat_connector();
