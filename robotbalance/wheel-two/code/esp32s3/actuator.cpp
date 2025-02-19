@@ -40,7 +40,7 @@ void motor_output(float fl, float fr)
     digitalWrite(PIN_LEFT_EN, 1);
   }
 
-  if(abs(fl)<0.001){
+  if(abs(fr)<0.001){
     digitalWrite(PIN_RIGHT_EN, 0);
   }
   else{
@@ -67,10 +67,60 @@ void motor_output(float fl, float fr)
 
 
 #if MOTORTYPE_SELECT==MOTORTYPE_DRV8825
+#define PWM_FREQ 1024
+#define PWM_RESOLUTION 8
 void motor_init()
 {
+  pinMode(PIN_LEFT_EN, OUTPUT);
+  pinMode(PIN_LEFT_M0, OUTPUT);
+  pinMode(PIN_LEFT_M1, OUTPUT);
+  pinMode(PIN_LEFT_M2, OUTPUT);
+  pinMode(PIN_LEFT_RST, OUTPUT);
+  pinMode(PIN_LEFT_SLP, OUTPUT);
+  ledcAttach(PIN_LEFT_STEP, PWM_FREQ, PWM_RESOLUTION);
+  pinMode(PIN_LEFT_DIR, OUTPUT);
+  digitalWrite(PIN_LEFT_EN, 1);   //0=on
+  digitalWrite(PIN_LEFT_M0, 1);   //1,1,1 = 32 step
+  digitalWrite(PIN_LEFT_M1, 1);
+  digitalWrite(PIN_LEFT_M2, 1);
+  digitalWrite(PIN_LEFT_RST, 1);   //1=on
+  digitalWrite(PIN_LEFT_SLP, 1);   //1=on
+
+  pinMode(PIN_RIGHT_EN, OUTPUT);
+  pinMode(PIN_RIGHT_M0, OUTPUT);
+  pinMode(PIN_RIGHT_M1, OUTPUT);
+  pinMode(PIN_RIGHT_M2, OUTPUT);
+  pinMode(PIN_RIGHT_RST, OUTPUT);
+  pinMode(PIN_RIGHT_SLP, OUTPUT);
+  ledcAttach(PIN_RIGHT_STEP, PWM_FREQ, PWM_RESOLUTION);
+  pinMode(PIN_RIGHT_DIR, OUTPUT);
+  digitalWrite(PIN_RIGHT_EN, 1);   //0=on
+  digitalWrite(PIN_RIGHT_M0, 1);   //1,1,1 = 32 step
+  digitalWrite(PIN_RIGHT_M1, 1);
+  digitalWrite(PIN_RIGHT_M2, 1);
+  digitalWrite(PIN_RIGHT_RST, 1);   //1=on
+  digitalWrite(PIN_RIGHT_SLP, 1);   //1=on
 }
 void motor_output(float fl, float fr)
 {
+  //Serial.printf("l=%f,r=%f\n", fl, fr);
+
+  if(abs(fl)<0.001){
+    digitalWrite(PIN_LEFT_EN, 1);
+  }
+  else{
+    ledcWrite(PIN_LEFT_STEP, 128);
+    digitalWrite(PIN_LEFT_DIR, (fl<0)?1:0);
+    digitalWrite(PIN_LEFT_EN, 0);
+  }
+
+  if(abs(fr)<0.001){
+    digitalWrite(PIN_RIGHT_EN, 1);
+  }
+  else{
+    ledcWrite(PIN_RIGHT_STEP, 128);
+    digitalWrite(PIN_RIGHT_DIR, (fr>0)?1:0);
+    digitalWrite(PIN_RIGHT_EN, 0);
+  }
 }
 #endif

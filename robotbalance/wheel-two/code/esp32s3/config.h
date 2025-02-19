@@ -14,11 +14,20 @@
 #define ROBOT_STEPPERMOTOR 2
 #define ROBOT_BLDCMOTOR 3
 
+/*
+dont use:
+0=boot
+19=d-
+20=d+
+45=io
+48=led
+*/
+
 
 
 
 //project select
-#define ROBOT_SELECT ROBOT_TTMOTOR
+#define ROBOT_SELECT ROBOT_STEPPERMOTOR
 
 #if ROBOT_SELECT==ROBOT_TTMOTOR
 #define BOARDNAME "esp32s3_muselab"
@@ -72,22 +81,22 @@
 #endif
 
 #if MOTORTYPE_SELECT==MOTORTYPE_DRV8825
-#define PIN_LEFT_0 35
-#define PIN_LEFT_1 36
-#define PIN_LEFT_2 37
-#define PIN_LEFT_3 38
-#define PIN_LEFT_4 39
-#define PIN_LEFT_5 40
-#define PIN_LEFT_6 41
-#define PIN_LEFT_7 42
-#define PIN_RIGHT_0 9
-#define PIN_RIGHT_1 10
-#define PIN_RIGHT_2 11
-#define PIN_RIGHT_3 12
-#define PIN_RIGHT_4 13
-#define PIN_RIGHT_5 14
-#define PIN_RIGHT_6 19
-#define PIN_RIGHT_7 20
+#define PIN_LEFT_EN 35
+#define PIN_LEFT_M0 36
+#define PIN_LEFT_M1 37
+#define PIN_LEFT_M2 38
+#define PIN_LEFT_RST 39
+#define PIN_LEFT_SLP 40
+#define PIN_LEFT_STEP 41
+#define PIN_LEFT_DIR 42
+#define PIN_RIGHT_EN 47
+#define PIN_RIGHT_M0 21
+#define PIN_RIGHT_M1 14
+#define PIN_RIGHT_M2 13
+#define PIN_RIGHT_RST 12
+#define PIN_RIGHT_SLP 11
+#define PIN_RIGHT_STEP 10
+#define PIN_RIGHT_DIR 9
 #endif
 
 
@@ -103,10 +112,10 @@
 #endif
 
 #if BATTTYPE_SELECT==BATTTYPE_4S
-#define PIN_VOLT1 4
-#define PIN_VOLT2 5
-#define PIN_VOLT3 6
-#define PIN_VOLT4 7
+#define PIN_VOLT1 7
+#define PIN_VOLT2 6
+#define PIN_VOLT3 5
+#define PIN_VOLT4 4
 #define r1_up  50000  //50k
 #define r1_dn 100000  //100k  //4.2*100/150=2.8
 #define r2_up 100000  //100k
