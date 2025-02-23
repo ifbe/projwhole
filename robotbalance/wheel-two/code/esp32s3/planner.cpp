@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include "config.h"
+#include "actuator.h"
 
 void quaternion_multiplyfrom(float* o, float* l, float* r)
 {
@@ -87,7 +88,17 @@ void computeeulerian(float* qin, float* vec)
   vec[3] *= 180 / MYPI;
 */
 }
+void computeangular(float* ain, float* vec)
+{
+  vec[0] = ain[0];
+  vec[1] = ain[1];
+  vec[2] = ain[2];
+}
 
+
+
+
+#if ROBOT_SELECT==ROBOT_TTMOTOR
 static float prevspeed = 0;   //pseudo realtime speed
 float pseudospeed()
 {
@@ -113,41 +124,36 @@ void speedring(float* wantdeg)
   *wantdeg = val;
 }
 
-float pitch_kp = 80;
-float pitch_ki = 0;
-float pitch_kd = 0;
-float pitch_preverr = 0;
-float pitch_prevms = 0;
-void pitchring(float wantdeg, float currdeg, float* out, long ms)
+//static float pitch_inte = 0;
+static float pitch_bias = -2;
+static float pitch_kp = 80;
+static float pitch_ki = 0;
+static float pitch_kd = pitch_kp/200;
+void pitchring(float wantdeg, float currdeg, float an, float* out, long ms)
 {
   float err = wantdeg - currdeg;
 
-  float vd = 0;
-  if(pitch_prevms){
-    float dt = ms - pitch_prevms;
-    if(dt>0)vd = (err-pitch_preverr)/dt;
-  }
-  float val = err*pitch_kp + vd*pitch_kd;
+  float val = err*pitch_kp;   // + an*pitch_kd;
   out[0] += val;
   out[1] += val;
-
-  pitch_preverr = err;
-  pitch_prevms = ms;
-
-  //motor pwm as pseudo speed
-  prevspeed = val;
+/*
+  pitch_inte += err;
+  if(pitch_inte <-10)pitch_inte =-10;
+  if(pitch_inte > 10)pitch_inte = 10;
+*/
 }
 
-float yaw_kp = 0;
-float yaw_ki = 0;
-float yaw_kd = 0;
+static float yaw_kp = 0;
+static float yaw_ki = 0;
+static float yaw_kd = 0;
 void yawring()
 {
 }
 
-void computepid(float* in, float* out, long ms)
+void computepid(float* angle, float* angular, float* out, long ms)
 {
-  float deg = -in[0];
+  float deg = -angle[0];
+  float an = -angular[0];
 
   out[0] = out[1] = 0;
   if(abs(deg)>60)return;
@@ -157,12 +163,92 @@ void computepid(float* in, float* out, long ms)
   speedring(&wantdeg);
 
   //pitch -> force
-  pitchring(-2+wantdeg, deg, out, ms);
+  pitchring(pitch_bias+wantdeg, deg, an, out, ms);
 
   //yaw -> force
+
+  //motor pwm as pseudo speed
+  prevspeed = (out[0]+out[1])/2;
 }
+#endif
 
 
+
+
+#if ROBOT_SELECT==ROBOT_STEPPERMOTOR
+static float speedpwm = 0;
+float pseudospeed()
+{
+  //float l = motor_getl();
+  //float r = motor_getr();
+  float l,r;
+  motor_getpwm(&l, &r);
+  float pwm = (l+r)/2;
+
+  speedpwm = speedpwm*0.7 + pwm*0.3;
+  //Serial.printf("%f %f %f %f\n", l, r, pwm, speedpwm);
+  return speedpwm;
+}
+static float speed_inte_limit = 500000;
+static float speed_inte = 0;
+static float speed_kp = 6;
+static float speed_ki = speed_kp/200;
+static float speed_kd = 0;
+void speedring(float wantspeed, float currspeed, float* wantdeg)
+{
+  float err = wantspeed - currspeed;
+  float val = err*speed_kp + speed_inte*speed_ki;
+  if(val <-15)val =-15;
+  if(val > 15)val = 15;
+  //Serial.printf("(%f-%f=%f) (%f) (%f)\n", wantspeed, currspeed, err, speed_inte, val);
+
+  speed_inte += err;
+  if(speed_inte <-speed_inte_limit)speed_inte =-speed_inte_limit;
+  if(speed_inte > speed_inte_limit)speed_inte = speed_inte_limit;
+
+  *wantdeg = val;
+}
+//
+static float pitch_bias = 7;
+static float pitch_kp = 450;    //750
+static float pitch_ki = 0;
+static float pitch_kd = -3000;   //550
+void pitchring(float wantdeg, float currdeg, float an, float* out, long ms)
+{
+  float err = wantdeg - currdeg;
+
+  float val = err*pitch_kp + an*pitch_kd;
+  out[0] += val;
+  out[1] += val;
+}
+//
+static float yaw_kp = 0;
+static float yaw_ki = 0;
+static float yaw_kd = 0;
+void yawring()
+{
+}
+void computepid(float* angle, float* angular, float* out, long ms)
+{
+  float deg = -angle[0];
+  float an = -angular[0];
+
+  out[0] = out[1] = 0;
+  if(abs(deg)>60)return;
+
+  //speed -> pitch
+  float wantdeg=0;
+  speedring(0, pseudospeed(), &wantdeg);
+
+  //pitch -> force
+  pitchring(-pitch_bias+wantdeg, deg, an, out, ms);
+}
+#endif
+
+
+
+
+//--------
 void planner_speedring_getpid(float* pid)
 {
   pid[0] = speed_kp;
@@ -175,8 +261,7 @@ void planner_speedring_setpid(float* pid)
   speed_ki = pid[1];
   speed_kd = pid[2];
 }
-
-
+//--------
 void planner_pitchring_getpid(float* pid)
 {
   pid[0] = pitch_kp;
@@ -189,8 +274,15 @@ void planner_pitchring_setpid(float* pid)
   pitch_ki = pid[1];
   pitch_kd = pid[2];
 }
-
-
+void planner_pitchring_getbias(float* bias)
+{
+  *bias = pitch_bias;
+}
+void planner_pitchring_setbias(float* bias)
+{
+  pitch_bias = *bias;
+}
+//--------
 void planner_yawring_getpid(float* pid)
 {
   pid[0] = yaw_kp;

@@ -7,12 +7,12 @@
 #if BATTTYPE_SELECT==BATTTYPE_2S
 static float a1 = 0.0;
 static float a2 = 0.0;
-void initbattery()
+void battery_init()
 {
   pinMode(PIN_VOLT1, INPUT);
   pinMode(PIN_VOLT2, INPUT);
 }
-void pollbattery()
+void battery_poll()
 {
   a1 = analogRead(PIN_VOLT1) * 3.3 / 4096;
   a2 = analogRead(PIN_VOLT2) * 3.3 / 4096;
@@ -35,14 +35,14 @@ static float a1 = 0.0;
 static float a2 = 0.0;
 static float a3 = 0.0;
 static float a4 = 0.0;
-void initbattery()
+void battery_init()
 {
   pinMode(PIN_VOLT1, INPUT);
   pinMode(PIN_VOLT2, INPUT);
   pinMode(PIN_VOLT3, INPUT);
   pinMode(PIN_VOLT4, INPUT);
 }
-void pollbattery()
+void battery_poll()
 {
   a1 = analogRead(PIN_VOLT1) * 3.3 / 4096;
   a2 = analogRead(PIN_VOLT2) * 3.3 / 4096;

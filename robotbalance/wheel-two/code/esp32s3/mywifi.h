@@ -1,2 +1,2 @@
-void initwifi();
-void pollwifi();
+void wifi_init();
+void wifi_poll();

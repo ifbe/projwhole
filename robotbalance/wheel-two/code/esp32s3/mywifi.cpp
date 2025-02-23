@@ -77,8 +77,8 @@ void handle_mahony() {
   String html;
   build_page_head(html);
   html += "<form action='/mahonysave' method='POST'>";
-  html += "SSID: <input type='text' name='p' value='" + String(pid[0]) + "'><br>";
-  html += "PASS: <input type='text' name='i' value='" + String(pid[1]) + "'><br>";
+  html += "p: <input type='text' name='p' value='" + String(pid[0]) + "'><br>";
+  html += "i: <input type='text' name='i' value='" + String(pid[1]) + "'><br>";
   html += "<input type='submit' value='Save'>";
   html += "</form>";
   server.send(200, "text/html", html);
@@ -109,27 +109,49 @@ void handle_planner() {
   float pitch_pid[3];
   planner_pitchring_getpid(pitch_pid);
 
+  float pitch_bias;
+  planner_pitchring_getbias(&pitch_bias);
+
   float speed_pid[3];
   planner_speedring_getpid(speed_pid);
 
+  char str[3][64];
   String html;
   build_page_head(html);
   html += "<form action='/plannersave' method='POST'>";
+
+  snprintf(str[0], 64, "%.6f", yaw_pid[0]);
+  snprintf(str[1], 64, "%.6f", yaw_pid[1]);
+  snprintf(str[2], 64, "%.6f", yaw_pid[2]);
   html += "yaw_pid: ";
-  html += "<input type='text' name='yaw_p' value='" + String(yaw_pid[0]) + "'>";
-  html += "<input type='text' name='yaw_i' value='" + String(yaw_pid[1]) + "'>";
-  html += "<input type='text' name='yaw_d' value='" + String(yaw_pid[2]) + "'>";
+  html += "<input type='text' name='yaw_p' value='" + String(str[0]) + "'>";
+  html += "<input type='text' name='yaw_i' value='" + String(str[1]) + "'>";
+  html += "<input type='text' name='yaw_d' value='" + String(str[2]) + "'>";
   html += "<br>";
+
+  snprintf(str[0], 64, "%.6f", pitch_pid[0]);
+  snprintf(str[1], 64, "%.6f", pitch_pid[1]);
+  snprintf(str[2], 64, "%.6f", pitch_pid[2]);
   html += "pitch_pid: ";
-  html += "<input type='text' name='pitch_p' value='" + String(pitch_pid[0]) + "'>";
-  html += "<input type='text' name='pitch_i' value='" + String(pitch_pid[1]) + "'>";
-  html += "<input type='text' name='pitch_d' value='" + String(pitch_pid[2]) + "'>";
+  html += "<input type='text' name='pitch_p' value='" + String(str[0]) + "'>";
+  html += "<input type='text' name='pitch_i' value='" + String(str[1]) + "'>";
+  html += "<input type='text' name='pitch_d' value='" + String(str[2]) + "'>";
   html += "<br>";
+
+  snprintf(str[0], 64, "%.6f", pitch_bias);
+  html += "pitch_bias: ";
+  html += "<input type='text' name='pitch_bias' value='" + String(str[0]) + "'>";
+  html += "<br>";
+
+  snprintf(str[0], 64, "%.6f", speed_pid[0]);
+  snprintf(str[1], 64, "%.6f", speed_pid[1]);
+  snprintf(str[2], 64, "%.6f", speed_pid[2]);
   html += "speed_pid: ";
-  html += "<input type='text' name='speed_p' value='" + String(speed_pid[0]) + "'>";
-  html += "<input type='text' name='speed_i' value='" + String(speed_pid[1]) + "'>";
-  html += "<input type='text' name='speed_d' value='" + String(speed_pid[2]) + "'>";
+  html += "<input type='text' name='speed_p' value='" + String(str[0]) + "'>";
+  html += "<input type='text' name='speed_i' value='" + String(str[1]) + "'>";
+  html += "<input type='text' name='speed_d' value='" + String(str[2]) + "'>";
   html += "<br>";
+
   html += "<input type='submit' value='Save'>";
   html += "</form>";
   server.send(200, "text/html", html);
@@ -138,6 +160,7 @@ void handle_planner() {
 void handle_planner_save() {
   Serial.println(__FUNCTION__);
 
+  float bias;
   float pid[3];
 
   pid[0] = server.arg("yaw_p").toFloat();
@@ -151,6 +174,10 @@ void handle_planner_save() {
   pid[2] = server.arg("pitch_d").toFloat();
   Serial.printf("planner pitchring setpid=%f,%f,%f\n", pid[0], pid[1], pid[2]);
   planner_pitchring_setpid(pid);
+
+  bias = server.arg("pitch_bias").toFloat();
+  Serial.printf("planner pitchring setbias=%f\n", bias);
+  planner_pitchring_setbias(&bias);
 
   pid[0] = server.arg("speed_p").toFloat();
   pid[1] = server.arg("speed_i").toFloat();
@@ -264,7 +291,7 @@ void WiFiEvent(WiFiEvent_t event) {
   }
 }
 
-void initwifi()
+void wifi_init()
 {
   loadCredentials(sta_ssid, sta_pass);
   Serial.printf("ap: ssid=%s, pass=%s\n", ap_ssid, ap_pass);
@@ -301,7 +328,7 @@ void initwifi()
   Serial.println("AP IP address: " + WiFi.softAPIP().toString());
 }
 
-void pollwifi()
+void wifi_poll()
 {
   server.handleClient();
 }

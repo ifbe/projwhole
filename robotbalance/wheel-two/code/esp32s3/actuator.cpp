@@ -67,8 +67,58 @@ void motor_output(float fl, float fr)
 
 
 #if MOTORTYPE_SELECT==MOTORTYPE_DRV8825
+#define PWM_ACCEL_LIMIT 1000
+int pwm_want_l = 0;
+int pwm_want_r = 0;
+int pwm_curr_l = 0;
+int pwm_curr_r = 0;
+static void ontimer_compute(){
+  int err;
+
+  err = pwm_want_l-pwm_curr_l;
+  if(err < -PWM_ACCEL_LIMIT)pwm_curr_l -= PWM_ACCEL_LIMIT;
+  else if(err > PWM_ACCEL_LIMIT)pwm_curr_l += PWM_ACCEL_LIMIT;
+  else pwm_curr_l = pwm_want_l;
+
+  err = pwm_want_r-pwm_curr_r;
+  if(err < -PWM_ACCEL_LIMIT)pwm_curr_r -= PWM_ACCEL_LIMIT;
+  else if(err > PWM_ACCEL_LIMIT)pwm_curr_r += PWM_ACCEL_LIMIT;
+  else pwm_curr_r = pwm_want_r;
+}
+static void ontimer_output(){
+  if(abs(pwm_curr_l)<160){   //0.001){
+    digitalWrite(PIN_LEFT_EN, 1);
+  }
+  else{
+    ledcChangeFrequency(PIN_LEFT_STEP, abs(pwm_curr_l), 8); //resolution=2^8=256
+    ledcWrite(PIN_LEFT_STEP, 128);    //duty=50%
+    //
+    digitalWrite(PIN_LEFT_DIR, (pwm_curr_l>0)?1:0);
+    digitalWrite(PIN_LEFT_EN, 0);
+  }
+
+  if(abs(pwm_curr_r)<160){   //0.001){
+    digitalWrite(PIN_RIGHT_EN, 1);
+    pwm_curr_r = 0;
+  }
+  else{
+    ledcChangeFrequency(PIN_RIGHT_STEP, abs(pwm_curr_r), 8);
+    ledcWrite(PIN_RIGHT_STEP, 128);
+    //
+    digitalWrite(PIN_RIGHT_DIR, (pwm_curr_r>0)?1:0);
+    digitalWrite(PIN_RIGHT_EN, 0);
+  }
+}
+int pingpong = 0;
+static void ontimer(void *){
+  if(pingpong&1)ontimer_output();
+  else ontimer_compute();
+
+  pingpong = (pingpong+1)&0xff;
+}
 #define PWM_FREQ 1024
 #define PWM_RESOLUTION 8
+hw_timer_t* timer = 0;
 void motor_init()
 {
   pinMode(PIN_LEFT_EN, OUTPUT);
@@ -100,27 +150,22 @@ void motor_init()
   digitalWrite(PIN_RIGHT_M2, 1);
   digitalWrite(PIN_RIGHT_RST, 1);   //1=on
   digitalWrite(PIN_RIGHT_SLP, 1);   //1=on
+
+  //timer
+  timer = timerBegin(1000);   //freq=1000
+  timerAlarm(timer, 10, true, 0);   //timer, 20ms, isreload, reloadvalue
+  timerAttachInterruptArg(timer, ontimer, 0);  //timer, func, arg
 }
 void motor_output(float fl, float fr)
 {
   //Serial.printf("l=%f,r=%f\n", fl, fr);
 
-  if(abs(fl)<0.001){
-    digitalWrite(PIN_LEFT_EN, 1);
-  }
-  else{
-    ledcWrite(PIN_LEFT_STEP, 128);
-    digitalWrite(PIN_LEFT_DIR, (fl<0)?1:0);
-    digitalWrite(PIN_LEFT_EN, 0);
-  }
-
-  if(abs(fr)<0.001){
-    digitalWrite(PIN_RIGHT_EN, 1);
-  }
-  else{
-    ledcWrite(PIN_RIGHT_STEP, 128);
-    digitalWrite(PIN_RIGHT_DIR, (fr>0)?1:0);
-    digitalWrite(PIN_RIGHT_EN, 0);
-  }
+  pwm_want_l =-(int)fl;
+  pwm_want_r = (int)fr;
+}
+void motor_getpwm(float* l, float* r)
+{
+  *l = (float)pwm_curr_l;
+  *r = -(float)pwm_curr_r;
 }
 #endif

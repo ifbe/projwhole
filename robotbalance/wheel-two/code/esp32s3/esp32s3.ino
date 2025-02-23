@@ -45,6 +45,10 @@ void loop()
   float acc[3];
   imu_read(gyr, acc);
 
+  float angular[3];
+  computeangular(gyr, angular);
+
+  //{
   mahony_update6(gyr[0], gyr[1], gyr[2], acc[0], acc[1], acc[2], deltaT);
   if(fusioncount <= 200)fusioncount++;
 
@@ -52,26 +56,31 @@ void loop()
   mahony_getq(q);
   //printf("%f,%f,%f,%f\n", q[0], q[1], q[2], q[3]);
 
-  float vec[4];
-  computeeulerian(q, vec);
-  //Serial.printf("%f,%f,%f\n", vec[0], vec[1], vec[2]);
+  float angle[4];
+  computeeulerian(q, angle);
+  //Serial.printf("%f,%f,%f\n", angle[0], angle[1], angle[2]);
 
-  radian2degree(vec);
-  Serial.printf("%d: %f,%f,%f\n", ms, vec[0], vec[1], vec[2]);
+  radian2degree(angle);
+  //}
 
-  val2led(vec[0]);  //pitch
+  val2led(angle[0]);  //pitch
 
-  if(fusioncount >= 200){
+  if(fusioncount >= 200){   //&&battery>3.5v
     float val[2];
-    computepid(vec, val, ms);
-    //Serial.printf("%f -> %f,%f\n", vec[1], val[0], val[1]);
+    computepid(angle, angular, val, ms);
+    //Serial.printf("%f -> %f,%f\n", angle[0], val[0], val[1]);
 
     motor_output(val[0], val[1]);
+
+    Serial.printf("%d : %f,%f,%f : %f,%f,%f : %f,%f\n", ms, angle[0], angle[1], angle[2], angular[0], angular[1], angular[2], val[0], val[1]);
+  }
+  else{
+    Serial.printf("%d : %f,%f,%f : %f,%f,%f\n", ms, angle[0], angle[1], angle[2], angular[0], angular[1], angular[2]);
   }
 
-  pollbattery();
-  pollwifi();
-  pollble();
+  battery_poll();
+  wifi_poll();
+  btble_poll();
 }
 
 void setup()
@@ -83,11 +92,11 @@ void setup()
 
   Serial.begin(115200);
 
-  initwifi();
+  wifi_init();
 
-  initble();
+  btble_init();
 
-  initbattery();
+  battery_init();
 
   motor_init();
 

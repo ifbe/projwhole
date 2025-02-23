@@ -11,8 +11,8 @@ static float q[4];
 //
 static float integralx, integraly, integralz;
 //
-static float twoKp = 8;
-static float twoKi = 0.5;
+static float twoKp = 1.0;
+static float twoKi = 0.05;
 void mahony_getpid(float* pid)
 {
   pid[0] = twoKp;
