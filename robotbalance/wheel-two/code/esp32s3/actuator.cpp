@@ -5,8 +5,80 @@
 
 
 #if MOTORTYPE_SELECT==MOTORTYPE_DRV8833
+#define PWM_ACCEL_LIMIT 200
+int pwm_want_l = 0;
+int pwm_want_r = 0;
+int pwm_curr_l = 0;
+int pwm_curr_r = 0;
+static void ontimer_compute(){
+  int err;
+  pwm_curr_l = pwm_want_l;
+  pwm_curr_r = pwm_want_r;
+/*
+  err = pwm_want_l-pwm_curr_l;
+  if(err < -PWM_ACCEL_LIMIT)pwm_curr_l -= PWM_ACCEL_LIMIT;
+  else if(err > PWM_ACCEL_LIMIT)pwm_curr_l += PWM_ACCEL_LIMIT;
+  else pwm_curr_l = pwm_want_l;
+
+  err = pwm_want_r-pwm_curr_r;
+  if(err < -PWM_ACCEL_LIMIT)pwm_curr_r -= PWM_ACCEL_LIMIT;
+  else if(err > PWM_ACCEL_LIMIT)pwm_curr_r += PWM_ACCEL_LIMIT;
+  else pwm_curr_r = pwm_want_r;
+*/
+}
+static void ontimer_output(){
+  if(abs(pwm_curr_l)<2){   //0.001){
+    digitalWrite(PIN_LEFT_EN, 0);
+  }
+  else{
+    int il_p = 0;
+    int il_n = 0;
+    if(pwm_curr_l<0){
+      il_p = 1023;
+      il_n = 1023 + pwm_curr_l;
+      if(il_n < 0)il_n = 0;
+    }
+    else{
+      il_p = 1023 - pwm_curr_l;
+      il_n = 1023;
+      if(il_p < 0)il_p = 0;
+    }
+    ledcWrite(PIN_LEFT_P, il_p);
+    ledcWrite(PIN_LEFT_N, il_n);
+    digitalWrite(PIN_LEFT_EN, 1);
+  }
+
+  if(abs(pwm_curr_r)<2){   //0.001){
+    digitalWrite(PIN_RIGHT_EN, 0);
+  }
+  else{
+    int ir_p = 0;
+    int ir_n = 0;
+    if(pwm_curr_r<0){
+      ir_p = 1023;
+      ir_n = 1023 + pwm_curr_r;
+      if(ir_n < 0)ir_n = 0;
+    }
+    else{
+      ir_p = 1023 - pwm_curr_r;
+      ir_n = 1023;
+      if(ir_p < 0)ir_p = 0;
+    }
+    ledcWrite(PIN_RIGHT_P, ir_p);
+    ledcWrite(PIN_RIGHT_N, ir_n);
+    digitalWrite(PIN_RIGHT_EN, 1);
+  }
+}
+int pingpong = 0;
+static void ontimer(void *){
+  if(pingpong&1)ontimer_output();
+  else ontimer_compute();
+
+  pingpong = (pingpong+1)&0xff;
+}
 #define PWM_FREQ 1000
-#define PWM_RESOLUTION 8
+#define PWM_RESOLUTION 10
+hw_timer_t* timer = 0;
 void motor_init()
 {
   ledcAttach(PIN_LEFT_P, PWM_FREQ, PWM_RESOLUTION);
@@ -16,50 +88,28 @@ void motor_init()
   ledcAttach(PIN_RIGHT_P, PWM_FREQ, PWM_RESOLUTION);
   ledcAttach(PIN_RIGHT_N, PWM_FREQ, PWM_RESOLUTION);
   pinMode(PIN_RIGHT_EN, OUTPUT);
+
+  //timer
+  timer = timerBegin(1000);   //freq=1000
+  timerAlarm(timer, 10, true, 0);   //timer, 20ms, isreload, reloadvalue
+  timerAttachInterruptArg(timer, ontimer, 0);  //timer, func, arg
 }
 void motor_output(float fl, float fr)
 {
-  if(abs(fl)<0.001){
-    digitalWrite(PIN_LEFT_EN, 0);
-  }
-  else{
-    int il_p = 0;
-    int il_n = 0;
-    if(fl<0){
-      il_p = 255;
-      il_n = 255 + (int)(fl*255/1000);
-      if(il_n < 0)il_n = 0;
-    }
-    else{
-      il_p = 255 - (int)(fl*255/1000);
-      il_n = 255;
-      if(il_p < 0)il_p = 0;
-    }
-    ledcWrite(PIN_LEFT_P, il_p);
-    ledcWrite(PIN_LEFT_N, il_n);
-    digitalWrite(PIN_LEFT_EN, 1);
-  }
+  if(fl<-1023)fl = -1023;
+  else if(fl>1023)fl = 1023;
 
-  if(abs(fr)<0.001){
-    digitalWrite(PIN_RIGHT_EN, 0);
-  }
-  else{
-    int ir_p = 0;
-    int ir_n = 0;
-    if(fr<0){
-      ir_p = 255;
-      ir_n = 255 + (int)(fr*255/1000);
-      if(ir_n < 0)ir_n = 0;
-    }
-    else{
-      ir_p = 255 - (int)(fr*255/1000);
-      ir_n = 255;
-      if(ir_p < 0)ir_p = 0;
-    }
-    ledcWrite(PIN_RIGHT_P, ir_p);
-    ledcWrite(PIN_RIGHT_N, ir_n);
-    digitalWrite(PIN_RIGHT_EN, 1);
-  }
+  if(fr<-1023)fr = -1023;
+  else if(fr>1023)fr = 1023;
+
+  pwm_want_l = (int)fl;
+  pwm_want_r = (int)fr;
+  //Serial.printf("l=%d,r=%d\n", pwm_curr_l, pwm_curr_r);
+}
+void motor_getpwm(float* l, float* r)
+{
+  *l = (float)pwm_curr_l;
+  *r = (float)pwm_curr_r;
 }
 #endif
 
@@ -99,7 +149,6 @@ static void ontimer_output(){
 
   if(abs(pwm_curr_r)<160){   //0.001){
     digitalWrite(PIN_RIGHT_EN, 1);
-    pwm_curr_r = 0;
   }
   else{
     ledcChangeFrequency(PIN_RIGHT_STEP, abs(pwm_curr_r), 8);

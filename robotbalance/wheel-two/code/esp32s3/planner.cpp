@@ -88,59 +88,59 @@ void computeeulerian(float* qin, float* vec)
   vec[3] *= 180 / MYPI;
 */
 }
-void computeangular(float* ain, float* vec)
-{
-  vec[0] = ain[0];
-  vec[1] = ain[1];
-  vec[2] = ain[2];
-}
 
 
 
 
 #if ROBOT_SELECT==ROBOT_TTMOTOR
-static float prevspeed = 0;   //pseudo realtime speed
+void computeangular(float* ain, float* vec)
+{
+  vec[0] =-ain[1];
+  vec[1] = ain[0];
+  vec[2] = ain[2];
+}
+static float speedpwm = 0;
 float pseudospeed()
 {
-  if(prevspeed<-1000)return prevspeed+1000;
-  if(prevspeed< 1000)return prevspeed/100;
-  return prevspeed-1000;
+  float l,r;
+  motor_getpwm(&l, &r);
+  float pwm = (l+r)/2;
+  speedpwm = speedpwm*0.7 + pwm*0.3;
+  return speedpwm;
 }
 
-static float wantspeed = 0;
-static float speed_kp = -0.002;
-static float speed_ki = 0;
+static float speed_ilimit = 2000;
+static float speed_inte = 0;
+static float speed_kp = 0;
+static float speed_ki = speed_kp/200;
 static float speed_kd = 0;
-void speedring(float* wantdeg)
+void speedring(float wantspeed, float currspeed, float* wantdeg)
 {
-  float currspeed = pseudospeed();
-
   float err = wantspeed - currspeed;
-  float val = err*speed_kp;
-  if(val <-5)val =-5;
-  if(val > 5)val = 5;
+  float val = err*speed_kp + speed_inte*speed_ki;
+  if(val <-10)val =-10;
+  if(val > 10)val = 10;
   //Serial.printf("%f,%f -> %f\n", wantspeed, currspeed, val);
+
+  speed_inte += err;
+  if(speed_inte <-speed_ilimit)speed_inte =-speed_ilimit;
+  if(speed_inte > speed_ilimit)speed_inte = speed_ilimit;
 
   *wantdeg = val;
 }
 
 //static float pitch_inte = 0;
-static float pitch_bias = -2;
-static float pitch_kp = 80;
+static float pitch_bias = 0;
+static float pitch_kp = 30;
 static float pitch_ki = 0;
-static float pitch_kd = pitch_kp/200;
+static float pitch_kd = 0;
 void pitchring(float wantdeg, float currdeg, float an, float* out, long ms)
 {
   float err = wantdeg - currdeg;
 
-  float val = err*pitch_kp;   // + an*pitch_kd;
+  float val = err*pitch_kp + an*pitch_kd;
   out[0] += val;
   out[1] += val;
-/*
-  pitch_inte += err;
-  if(pitch_inte <-10)pitch_inte =-10;
-  if(pitch_inte > 10)pitch_inte = 10;
-*/
 }
 
 static float yaw_kp = 0;
@@ -160,15 +160,12 @@ void computepid(float* angle, float* angular, float* out, long ms)
 
   //speed -> pitch
   float wantdeg=0;
-  speedring(&wantdeg);
+  speedring(0, pseudospeed(), &wantdeg);
 
   //pitch -> force
   pitchring(pitch_bias+wantdeg, deg, an, out, ms);
 
   //yaw -> force
-
-  //motor pwm as pseudo speed
-  prevspeed = (out[0]+out[1])/2;
 }
 #endif
 
@@ -176,6 +173,12 @@ void computepid(float* angle, float* angular, float* out, long ms)
 
 
 #if ROBOT_SELECT==ROBOT_STEPPERMOTOR
+void computeangular(float* ain, float* vec)
+{
+  vec[0] = ain[0];
+  vec[1] = ain[1];
+  vec[2] = ain[2];
+}
 static float speedpwm = 0;
 float pseudospeed()
 {
@@ -189,22 +192,22 @@ float pseudospeed()
   //Serial.printf("%f %f %f %f\n", l, r, pwm, speedpwm);
   return speedpwm;
 }
-static float speed_inte_limit = 500000;
+static float speed_ilimit = 200000;
 static float speed_inte = 0;
-static float speed_kp = 6;
+static float speed_kp = 300;
 static float speed_ki = speed_kp/200;
 static float speed_kd = 0;
 void speedring(float wantspeed, float currspeed, float* wantdeg)
 {
   float err = wantspeed - currspeed;
   float val = err*speed_kp + speed_inte*speed_ki;
-  if(val <-15)val =-15;
-  if(val > 15)val = 15;
+  if(val <-10)val =-10;
+  if(val > 10)val = 10;
   //Serial.printf("(%f-%f=%f) (%f) (%f)\n", wantspeed, currspeed, err, speed_inte, val);
 
   speed_inte += err;
-  if(speed_inte <-speed_inte_limit)speed_inte =-speed_inte_limit;
-  if(speed_inte > speed_inte_limit)speed_inte = speed_inte_limit;
+  if(speed_inte <-speed_ilimit)speed_inte =-speed_ilimit;
+  if(speed_inte > speed_ilimit)speed_inte = speed_ilimit;
 
   *wantdeg = val;
 }
@@ -212,7 +215,7 @@ void speedring(float wantspeed, float currspeed, float* wantdeg)
 static float pitch_bias = 7;
 static float pitch_kp = 450;    //750
 static float pitch_ki = 0;
-static float pitch_kd = -3000;   //550
+static float pitch_kd = -2200;   //550
 void pitchring(float wantdeg, float currdeg, float an, float* out, long ms)
 {
   float err = wantdeg - currdeg;
@@ -260,6 +263,15 @@ void planner_speedring_setpid(float* pid)
   speed_kp = pid[0];
   speed_ki = pid[1];
   speed_kd = pid[2];
+}
+void planner_speedring_getilimit(float* ilimit, float* inte)
+{
+  *ilimit = speed_ilimit;
+  *inte = speed_inte;
+}
+void planner_speedring_setilimit(float* ilimit)
+{
+  speed_ilimit = *ilimit;
 }
 //--------
 void planner_pitchring_getpid(float* pid)

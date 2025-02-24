@@ -7,26 +7,50 @@
 #if IMUTYPE_SELECT==IMUTYPE_MPU6050
 #include <MPU6050.h>
 MPU6050 mpu;
-void imu_init()
-{
-  Wire.begin(pin_sda, pin_scl);  //SCL = 17, SDA = 18
-
-  mpu.initialize(ACCEL_FS::A2G, GYRO_FS::G1000DPS);
-}
+float bias_gx = 0;
+float bias_gy = 0;
+float bias_gz = 0;
 void imu_read(float* gyr, float* acc)
 {
   int16_t ax, ay, az, gx, gy, gz;
   mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
   //Serial.printf("raw: a=(%d,%d,%d) g=(%d,%d,%d) t=%d\n", ax,ay,az, gx,gy,gz, ms);
 
-  gyr[0] = (gx) * (1000.0 / 32768) * PI / 180;   //bug_to_raw * raw_to_deg * deg_to_rad
-  gyr[1] = (gy) * (1000.0 / 32768) * PI / 180;
-  gyr[2] = (gz) * (1000.0 / 32768) * PI / 180;
+  gyr[0] = (gx-bias_gx) * (1000.0 / 32768) * PI / 180;   //bug_to_raw * raw_to_deg * deg_to_rad
+  gyr[1] = (gy-bias_gy) * (1000.0 / 32768) * PI / 180;
+  gyr[2] = (gz-bias_gz) * (1000.0 / 32768) * PI / 180;
 
   acc[0] = (-2*ax) * 2.0 / 32768;    //bug_to_raw * raw_to_howmanyg
   acc[1] = (-2*ay) * 2.0 / 32768;
   acc[2] = (-2*az) * 2.0 / 32768;
   //Serial.printf("std: a=(%f,%f,%f) g=(%f,%f,%f) t=%d\n", fax,fay,faz, fgx,fgy,fgz, ms);
+}
+void imu_init()
+{
+  Wire.begin(pin_sda, pin_scl);  //SCL = 17, SDA = 18
+
+  mpu.initialize(ACCEL_FS::A2G, GYRO_FS::G1000DPS);
+
+  delay(1000);
+
+#if 0
+  while(true){
+    bias_gx = bias_gy = bias_gz = 0;
+    int j;
+    for(j=0;j<1000;j++){
+      int16_t ax, ay, az, gx, gy, gz;
+      mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
+      bias_gx += gx;
+      bias_gy += gy;
+      bias_gz += gz;
+    }
+    Serial.printf("%d,%d,%d\n", bias_gx, bias_gy, bias_gz);
+  }
+#else
+  bias_gx = 56.5;
+  bias_gy = -66.5;
+  bias_gz = 14.3;
+#endif
 }
 #endif
 

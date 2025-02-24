@@ -115,6 +115,10 @@ void handle_planner() {
   float speed_pid[3];
   planner_speedring_getpid(speed_pid);
 
+  float speed_ilimit;
+  float speed_inte;
+  planner_speedring_getilimit(&speed_ilimit, &speed_inte);
+
   char str[3][64];
   String html;
   build_page_head(html);
@@ -152,6 +156,13 @@ void handle_planner() {
   html += "<input type='text' name='speed_d' value='" + String(str[2]) + "'>";
   html += "<br>";
 
+  snprintf(str[0], 64, "%.6f", speed_ilimit);
+  snprintf(str[1], 64, "%.6f", speed_inte);
+  html += "speed_ilimit: ";
+  html += "<input type='text' name='speed_ilimit' value='" + String(str[0]) + "'>";
+  html += "<input type='text' name='speed_inte' value='" + String(str[1]) + "'>";
+  html += "<br>";
+
   html += "<input type='submit' value='Save'>";
   html += "</form>";
   server.send(200, "text/html", html);
@@ -161,6 +172,7 @@ void handle_planner_save() {
   Serial.println(__FUNCTION__);
 
   float bias;
+  float ilimit;
   float pid[3];
 
   pid[0] = server.arg("yaw_p").toFloat();
@@ -184,6 +196,10 @@ void handle_planner_save() {
   pid[2] = server.arg("speed_d").toFloat();
   Serial.printf("planner speedring setpid=%f,%f,%f\n", pid[0], pid[1], pid[2]);
   planner_speedring_setpid(pid);
+
+  ilimit = server.arg("speed_ilimit").toFloat();
+  Serial.printf("planner speedhring setilimit=%f\n", ilimit);
+  planner_speedring_setilimit(&ilimit);
 
   server.sendHeader("Location", "/planner");
   server.send(303);
