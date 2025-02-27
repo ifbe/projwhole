@@ -2,7 +2,7 @@
 void computeeulerian(float* q, float* v);
 void computeangular(float* i, float* o);
 
-void computepid(float* angle, float* angular, float* out, long ms);
+int computepid(float* angle, float* angular, float* out, long ms);
 
 void planner_yawring_getpid(float* pid);
 void planner_yawring_setpid(float* pid);

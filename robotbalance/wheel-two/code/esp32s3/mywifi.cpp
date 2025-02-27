@@ -1,19 +1,29 @@
-#include "config.h"
 #include <WiFi.h>
+#include <NetworkUdp.h>
 #include <WebServer.h>
 #include <string.h>
+#include "config.h"
 #include "mystor.h"
 #include "battery.h"
 #include "mahony.h"
 #include "planner.h"
-
+//ap
 const char* ap_ssid = BOARDNAME;
 const char* ap_pass = "12345678";
-
+//std::vector<clients> xxx;
+//sta
 String sta_ssid = "";
 String sta_pass = "";
-
+bool sta_connected = 0;
+//tcp 80
 WebServer server(80);
+//udp 9999
+NetworkUDP udp;
+String udp_peer_ip = "192.168.5.217";
+int udp_peer_port = 9999;
+
+
+
 
 void build_page_head(String& html){
   html += "<a href='/wifi'>wifi</a>\n";
@@ -242,6 +252,79 @@ void handleRoot() {
   handle_wifi();
 }
 
+void wifi_init_webserver()
+{
+  server.on("/", handleRoot);
+
+  server.on("/wifi", handle_wifi);
+  server.on("/wifisave", handle_wifi_save);
+
+  server.on("/ble", handle_ble);
+
+  server.on("/sensor", handle_sensor);
+
+  server.on("/mahony", handle_mahony);
+  server.on("/mahonysave", handle_mahony_save);
+
+  server.on("/planner", handle_planner);
+  server.on("/plannersave", handle_planner_save);
+
+  server.on("/led", handle_led);
+
+  server.on("/motor", handle_motor);
+
+  server.on("/battery", handle_battery);
+
+  server.begin();
+}
+
+
+
+
+void wifi_udp_send(uint8_t buf, int len)
+{
+  if(sta_connected != true)return;
+
+  udp.beginPacket(udp_peer_ip.c_str(), udp_peer_port);
+  //udp.write(buf, len);
+  udp.endPacket();
+}
+void wifi_udp_init()
+{
+  Serial.println(__FUNCTION__);
+  udp.begin(9999);
+}
+void wifi_udp_poll()
+{
+  if(sta_connected != true)return;
+
+  int pktlen = udp.parsePacket();
+  if(pktlen <= 0)return;
+//Serial.println(ret);
+
+  int sz = (pktlen<256) ? pktlen : 256; 
+  unsigned char buf[256];
+  int readlen = udp.read(buf, sz);
+  if(readlen < 0)return;
+
+  char str[256] = {0};
+  int printlen = (readlen<16) ? readlen : 16;
+  int offs = 0;
+  for(int j=0;j<printlen;j++)offs += snprintf(str+offs, 256-offs, "%02x%c", buf[j], (j+1<printlen) ? ',' : '\0');
+
+  IPAddress ip = udp.remoteIP();
+  int port = udp.remotePort();
+  Serial.printf("%d.%d.%d.%d@%d -> %s\n", ip[0], ip[1], ip[2], ip[3], port, str);
+
+  if(readlen < pktlen){
+    Serial.printf("(pktlen=%d, uselen=%d, drop remain)\n", pktlen, readlen);
+    udp.clear();
+  }
+}
+
+
+
+
 void WiFiEvent(WiFiEvent_t event) {
   switch (event) {
   case ARDUINO_EVENT_WIFI_OFF:   //100
@@ -273,6 +356,8 @@ void WiFiEvent(WiFiEvent_t event) {
     break;
   case ARDUINO_EVENT_WIFI_STA_GOT_IP:
     Serial.printf("ARDUINO_EVENT_WIFI_STA_GOT_IP: %s\n", WiFi.localIP().toString());
+    wifi_udp_init();
+    sta_connected = true;
     break;
   case ARDUINO_EVENT_WIFI_STA_GOT_IP6:
     Serial.println("ARDUINO_EVENT_WIFI_STA_GOT_IP6");
@@ -290,6 +375,7 @@ void WiFiEvent(WiFiEvent_t event) {
     Serial.println("ARDUINO_EVENT_WIFI_AP_STACONNECTED");
     break;
   case ARDUINO_EVENT_WIFI_AP_STADISCONNECTED:
+    sta_connected = false;
     Serial.println("ARDUINO_EVENT_WIFI_AP_STADISCONNECTED");
     break;
   case ARDUINO_EVENT_WIFI_AP_STAIPASSIGNED:
@@ -309,42 +395,29 @@ void WiFiEvent(WiFiEvent_t event) {
 
 void wifi_init()
 {
+  //load
   loadCredentials(sta_ssid, sta_pass);
   Serial.printf("ap: ssid=%s, pass=%s\n", ap_ssid, ap_pass);
   Serial.printf("sta: ssid=%s, pass=%s\n", sta_ssid.c_str(), sta_pass.c_str());
 
+  //event
   WiFi.onEvent(WiFiEvent);
 
+  //ap
   WiFi.softAP(ap_ssid, ap_pass);
-  WiFi.begin(sta_ssid.c_str(), sta_pass.c_str());
-
-  server.on("/", handleRoot);
-
-  server.on("/wifi", handle_wifi);
-  server.on("/wifisave", handle_wifi_save);
-
-  server.on("/ble", handle_ble);
-
-  server.on("/sensor", handle_sensor);
-
-  server.on("/mahony", handle_mahony);
-  server.on("/mahonysave", handle_mahony_save);
-
-  server.on("/planner", handle_planner);
-  server.on("/plannersave", handle_planner_save);
-
-  server.on("/led", handle_led);
-
-  server.on("/motor", handle_motor);
-
-  server.on("/battery", handle_battery);
-
-  server.begin();
-
   Serial.println("AP IP address: " + WiFi.softAPIP().toString());
+
+  //sta
+  if( (sta_ssid[0]>=' ')&&(sta_ssid[0]<0x80) ){
+    WiFi.begin(sta_ssid.c_str(), sta_pass.c_str());
+  }
+
+  //web
+  wifi_init_webserver();
 }
 
 void wifi_poll()
 {
   server.handleClient();
+  wifi_udp_poll();
 }

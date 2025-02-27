@@ -1,7 +1,8 @@
 
 #define IMUTYPE_MPU6050 1
-#define IMUTYPE_ICM42688 2
+#define IMUTYPE_MPU9250 2
 #define IMUTYPE_BMI270 3
+#define IMUTYPE_ICM42688 4
 
 #define MOTORTYPE_DRV8833 1 //tt motor
 #define MOTORTYPE_DRV8825 2 //stepper motor
@@ -10,6 +11,7 @@
 #define BATTTYPE_2S 2
 #define BATTTYPE_4S 4
 
+#define ROBOT_TEST 0
 #define ROBOT_TTMOTOR 1
 #define ROBOT_STEPPERMOTOR 2
 #define ROBOT_BLDCMOTOR 3
@@ -27,7 +29,7 @@ dont use:
 
 
 //project select
-#define ROBOT_SELECT ROBOT_TTMOTOR
+#define ROBOT_SELECT ROBOT_TEST
 
 #if ROBOT_SELECT==ROBOT_TTMOTOR
 #define BOARDNAME "esp32s3_muselab"
@@ -44,10 +46,18 @@ dont use:
 #define BATTTYPE_SELECT BATTTYPE_4S
 #endif
 #if ROBOT_SELECT==ROBOT_BLDCMOTOR
-#define BOARDNAME "esp32s3_?????"
+#define BOARDNAME "esp32s3_vcc-gnd"
+#define SENSORINBODYSPACE {0, 0, -0.7071067811865476, 0.7071067811865476}
 #define IMUTYPE_SELECT IMUTYPE_BMI270
 #define MOTORTYPE_SELECT MOTORTYPE_DRV8301
-#define BATTTYPE_SELECT BATTTYPE_2S
+#define BATTTYPE_SELECT BATTTYPE_4S
+#endif
+#if ROBOT_SELECT==ROBOT_TEST
+#define BOARDNAME "esp32s3_telesky"
+#define SENSORINBODYSPACE {0, 0, -0.7071067811865476, 0.7071067811865476}
+#define IMUTYPE_SELECT IMUTYPE_MPU9250
+#define MOTORTYPE_SELECT MOTORTYPE_DRV8301
+#define BATTTYPE_SELECT BATTTYPE_4S
 #endif
 
 
@@ -59,6 +69,11 @@ dont use:
 #define pin_scl 17
 #endif
 
+#if IMUTYPE_SELECT==IMUTYPE_MPU9250
+#define pin_sda 36
+#define pin_scl 35
+#endif
+
 #if IMUTYPE_SELECT==IMUTYPE_ICM42688
 #define pin_ad0 15
 #define pin_sda 16
@@ -67,6 +82,16 @@ dont use:
 #define pin_int1 8
 #define pin_int2 3
 #endif
+
+#if IMUTYPE_SELECT==IMUTYPE_BMI270
+#define pin_ad0 35
+#define pin_sda 36
+#define pin_scl 37
+#define pin_cs 38
+#define pin_int1 39
+#define pin_int2 40
+#endif
+
 
 
 
@@ -98,6 +123,10 @@ dont use:
 #define PIN_RIGHT_STEP 10
 #define PIN_RIGHT_DIR 9
 #endif
+
+#if MOTORTYPE_SELECT==MOTORTYPE_DRV8825
+#endif
+
 
 
 

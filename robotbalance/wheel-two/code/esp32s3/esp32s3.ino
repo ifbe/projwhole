@@ -14,6 +14,7 @@ static unsigned long fusioncount;
 
 void setled(int r, int g, int b)
 {
+  //Serial.printf("%d,%d,%d\n", r, g, b);
   int lim = RGB_BRIGHTNESS>>1;
   if(r > lim)r = lim;
   if(g > lim)g = lim;
@@ -21,10 +22,15 @@ void setled(int r, int g, int b)
   rgbLedWrite(RGB_BUILTIN, r, g, b);
 }
 
-void val2led(float val)
+void val2led(int diff)
 {
-  if(val>0)setled(val, 0, 0);
-  else setled(0, 0, -val);
+  int absdiff = abs(diff);
+  if(abs(diff)>45)setled(1, 1, 1);
+  else{
+    int green = (absdiff>10) ? absdiff : 0;
+    if(diff>0)setled(0, green, absdiff);
+    else setled(absdiff, green, 0);
+  }
 }
 
 void radian2degree(float* vec)
@@ -36,6 +42,13 @@ void radian2degree(float* vec)
 
 void loop()
 {
+  wifi_poll();
+  btble_poll();
+
+  float volt[4];
+  battery_poll();
+  int voltok = getvolt(volt);
+
   unsigned long ms = millis();
   float deltaT = (ms-oldtime)*0.001;
   //Serial.printf("%f,%f\n", mpu.get_acce_resolution(), mpu.get_gyro_resolution() );
@@ -63,24 +76,24 @@ void loop()
   radian2degree(angle);
   //}
 
-  val2led(angle[0]);  //pitch
-
-  if(fusioncount >= 200){   //&&battery>3.5v
+  if(!voltok){
+    setled(16, 0, 16);
+    //Serial.printf("%f,%f,%f,%f\n", volt[0], volt[1], volt[2], volt[3]);
+  }
+  else if(fusioncount < 200){
+    Serial.printf("%d : %f,%f,%f : %f,%f,%f\n", ms, angle[0], angle[1], angle[2], angular[0], angular[1], angular[2]);
+  }
+  else{
     float val[2];
-    computepid(angle, angular, val, ms);
+    int anglediff = computepid(angle, angular, val, ms);
     //Serial.printf("%f -> %f,%f\n", angle[0], val[0], val[1]);
 
     motor_output(val[0], val[1]);
 
-    Serial.printf("%d : %f,%f,%f : %f,%f,%f : %f,%f\n", ms, angle[0], angle[1], angle[2], angular[0], angular[1], angular[2], val[0], val[1]);
-  }
-  else{
-    Serial.printf("%d : %f,%f,%f : %f,%f,%f\n", ms, angle[0], angle[1], angle[2], angular[0], angular[1], angular[2]);
-  }
+    val2led(anglediff);
 
-  battery_poll();
-  wifi_poll();
-  btble_poll();
+    //Serial.printf("%d : %f,%f,%f : %f,%f,%f : %f,%f\n", ms, angle[0], angle[1], angle[2], angular[0], angular[1], angular[2], val[0], val[1]);
+  }
 }
 
 void setup()

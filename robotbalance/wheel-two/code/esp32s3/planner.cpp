@@ -152,20 +152,24 @@ void yawring()
 
 void computepid(float* angle, float* angular, float* out, long ms)
 {
+  float bias = -pitch_bias;
   float deg = -angle[0];
   float an = -angular[0];
 
   out[0] = out[1] = 0;
-  if(abs(deg)>60)return;
+  if(abs(deg)>60)return deg-bias;
 
   //speed -> pitch
   float wantdeg=0;
   speedring(0, pseudospeed(), &wantdeg);
 
   //pitch -> force
-  pitchring(pitch_bias+wantdeg, deg, an, out, ms);
+  pitchring(bias+wantdeg, deg, an, out, ms);
 
   //yaw -> force
+
+  //led
+  return deg-bias;
 }
 #endif
 
@@ -192,17 +196,17 @@ float pseudospeed()
   //Serial.printf("%f %f %f %f\n", l, r, pwm, speedpwm);
   return speedpwm;
 }
-static float speed_ilimit = 200000;
+static float speed_ilimit = 2000;
 static float speed_inte = 0;
-static float speed_kp = 300;
+static float speed_kp = 1000;
 static float speed_ki = speed_kp/200;
 static float speed_kd = 0;
 void speedring(float wantspeed, float currspeed, float* wantdeg)
 {
   float err = wantspeed - currspeed;
   float val = err*speed_kp + speed_inte*speed_ki;
-  if(val <-10)val =-10;
-  if(val > 10)val = 10;
+  if(val <-12)val =-12;
+  if(val > 12)val = 12;
   //Serial.printf("(%f-%f=%f) (%f) (%f)\n", wantspeed, currspeed, err, speed_inte, val);
 
   speed_inte += err;
@@ -213,9 +217,9 @@ void speedring(float wantspeed, float currspeed, float* wantdeg)
 }
 //
 static float pitch_bias = 7;
-static float pitch_kp = 450;    //750
+static float pitch_kp = 500;    //750
 static float pitch_ki = 0;
-static float pitch_kd = -2200;   //550
+static float pitch_kd = -120;   //550
 void pitchring(float wantdeg, float currdeg, float an, float* out, long ms)
 {
   float err = wantdeg - currdeg;
@@ -231,20 +235,113 @@ static float yaw_kd = 0;
 void yawring()
 {
 }
-void computepid(float* angle, float* angular, float* out, long ms)
+int computepid(float* angle, float* angular, float* out, long ms)
 {
+  float bias = -pitch_bias;
   float deg = -angle[0];
   float an = -angular[0];
 
   out[0] = out[1] = 0;
-  if(abs(deg)>60)return;
+  if(abs(deg)>60)return deg-bias;
 
   //speed -> pitch
   float wantdeg=0;
-  speedring(0, pseudospeed(), &wantdeg);
+  float currspeed = pseudospeed();
+  if(abs(deg-bias) < 10){   //small angle
+    wantdeg = 0;
+    speed_inte = 0;
+  }
+  else{
+    speedring(0, currspeed, &wantdeg);
+  }
 
   //pitch -> force
   pitchring(-pitch_bias+wantdeg, deg, an, out, ms);
+
+  //led
+  return deg-bias;
+}
+#endif
+
+
+
+
+#if (ROBOT_SELECT==ROBOT_BLDCMOTOR)||(ROBOT_SELECT==ROBOT_TEST)
+void computeangular(float* ain, float* vec)
+{
+  vec[0] = ain[0];
+  vec[1] = ain[1];
+  vec[2] = ain[2];
+}
+static float speedpwm = 0;
+float pseudospeed()
+{
+  //float l = motor_getl();
+  //float r = motor_getr();
+  float l,r;
+  motor_getpwm(&l, &r);
+  float pwm = (l+r)/2;
+
+  speedpwm = speedpwm*0.7 + pwm*0.3;
+  //Serial.printf("%f %f %f %f\n", l, r, pwm, speedpwm);
+  return speedpwm;
+}
+static float speed_ilimit = 2000;
+static float speed_inte = 0;
+static float speed_kp = 1000;
+static float speed_ki = speed_kp/200;
+static float speed_kd = 0;
+void speedring(float wantspeed, float currspeed, float* wantdeg)
+{
+  float err = wantspeed - currspeed;
+  float val = err*speed_kp + speed_inte*speed_ki;
+  if(val <-12)val =-12;
+  if(val > 12)val = 12;
+  //Serial.printf("(%f-%f=%f) (%f) (%f)\n", wantspeed, currspeed, err, speed_inte, val);
+
+  speed_inte += err;
+  if(speed_inte <-speed_ilimit)speed_inte =-speed_ilimit;
+  if(speed_inte > speed_ilimit)speed_inte = speed_ilimit;
+
+  *wantdeg = val;
+}
+//
+static float pitch_bias = 0;
+static float pitch_kp = 500;    //750
+static float pitch_ki = 0;
+static float pitch_kd = -120;   //550
+void pitchring(float wantdeg, float currdeg, float an, float* out, long ms)
+{
+  float err = wantdeg - currdeg;
+
+  float val = err*pitch_kp + an*pitch_kd;
+  out[0] += val;
+  out[1] += val;
+}
+//
+static float yaw_kp = 0;
+static float yaw_ki = 0;
+static float yaw_kd = 0;
+void yawring()
+{
+}
+int computepid(float* angle, float* angular, float* out, long ms)
+{
+  float bias = -pitch_bias;
+  float deg = -angle[0];
+  float an = -angular[0];
+
+  out[0] = out[1] = 0;
+  if(abs(deg)>60)return deg-bias;
+
+  //speed -> pitch
+  float wantdeg=0;
+  float currspeed = pseudospeed();
+  if(abs(deg-bias) < 10){
+  }
+  else{
+  }
+  return deg-bias;
 }
 #endif
 

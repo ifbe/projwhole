@@ -18,12 +18,13 @@ void battery_poll()
   a2 = analogRead(PIN_VOLT2) * 3.3 / 4096;
   //Serial.printf("v1=%f v2=%f\n", a1, a2);
 }
-void getvolt(float* volt)
+int getvolt(float* volt)
 {
   volt[0] = a1 * (r1_up+r1_dn) / r1_dn;
   volt[1] = a2 * (r2_up+r2_dn) / r2_dn;
   volt[2] = 0;
   volt[3] = 0;
+  return (volt[0]>2.5) && (volt[0]<4.2) && (volt[1]>5) && (volt[1]<8.4);
 }
 #endif
 
@@ -50,11 +51,13 @@ void battery_poll()
   a4 = analogRead(PIN_VOLT4) * 3.3 / 4096;
   //Serial.printf("v1=%f v2=%f\n", a1, a2);
 }
-void getvolt(float* volt)
+int getvolt(float* volt)
 {
   volt[0] = a1 * (r1_up+r1_dn) / r1_dn;
   volt[1] = a2 * (r2_up+r2_dn) / r2_dn;
   volt[2] = a3 * (r3_up+r3_dn) / r3_dn;
   volt[3] = a4 * (r4_up+r4_dn) / r4_dn;
+
+  return (volt[0]>2.5) && (volt[0]<4.2) && (volt[1]>5) && (volt[1]<8.4) && (volt[2]>7.5) && (volt[2]<12.6) && (volt[3]>10) && (volt[3]<16.8);
 }
 #endif
