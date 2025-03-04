@@ -6,11 +6,15 @@ int computepid(float* angle, float* angular, float* out, long ms);
 
 void planner_yawring_getpid(float* pid);
 void planner_yawring_setpid(float* pid);
+void planner_yawring_getyaw(float* want);
+void planner_yawring_setyaw(float* want);
 
 void planner_pitchring_getpid(float* pid);
 void planner_pitchring_setpid(float* pid);
 void planner_pitchring_getbias(float* bias);
 void planner_pitchring_setbias(float* bias);
+void planner_speedring_getspeed(float* want, float* curr);
+void planner_speedring_setspeed(float* want);
 
 void planner_speedring_getpid(float* pid);
 void planner_speedring_setpid(float* pid);

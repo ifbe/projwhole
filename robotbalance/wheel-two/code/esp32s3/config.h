@@ -29,7 +29,7 @@ dont use:
 
 
 //project select
-#define ROBOT_SELECT ROBOT_TEST
+#define ROBOT_SELECT ROBOT_STEPPERMOTOR
 
 #if ROBOT_SELECT==ROBOT_TTMOTOR
 #define BOARDNAME "esp32s3_muselab"

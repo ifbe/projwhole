@@ -116,6 +116,9 @@ void handle_planner() {
   float yaw_pid[3];
   planner_yawring_getpid(yaw_pid);
 
+  float yaw_want;
+  planner_yawring_getyaw(&yaw_want);
+
   float pitch_pid[3];
   planner_pitchring_getpid(pitch_pid);
 
@@ -128,6 +131,10 @@ void handle_planner() {
   float speed_ilimit;
   float speed_inte;
   planner_speedring_getilimit(&speed_ilimit, &speed_inte);
+
+  float speed_want;
+  float speed_curr;
+  planner_speedring_getspeed(&speed_want, &speed_curr);
 
   char str[3][64];
   String html;
@@ -143,6 +150,12 @@ void handle_planner() {
   html += "<input type='text' name='yaw_d' value='" + String(str[2]) + "'>";
   html += "<br>";
 
+  snprintf(str[0], 64, "%.f", yaw_want);
+  html += "yaw_want: ";
+  html += "<input type='text' name='yaw_want' value='" + String(str[0]) + "'>";
+  html += "<br>";
+  html += "<br>";
+
   snprintf(str[0], 64, "%.6f", pitch_pid[0]);
   snprintf(str[1], 64, "%.6f", pitch_pid[1]);
   snprintf(str[2], 64, "%.6f", pitch_pid[2]);
@@ -155,6 +168,7 @@ void handle_planner() {
   snprintf(str[0], 64, "%.6f", pitch_bias);
   html += "pitch_bias: ";
   html += "<input type='text' name='pitch_bias' value='" + String(str[0]) + "'>";
+  html += "<br>";
   html += "<br>";
 
   snprintf(str[0], 64, "%.6f", speed_pid[0]);
@@ -173,6 +187,13 @@ void handle_planner() {
   html += "<input type='text' name='speed_inte' value='" + String(str[1]) + "'>";
   html += "<br>";
 
+  snprintf(str[0], 64, "%f", speed_want);
+  snprintf(str[1], 64, "%f", speed_curr);
+  html += "speed_value: ";
+  html += "<input type='text' name='speed_want' value='" + String(str[0]) + "'>";
+  html += "<input type='text' name='speed_curr' value='" + String(str[1]) + "'>";
+  html += "<br>";
+
   html += "<input type='submit' value='Save'>";
   html += "</form>";
   server.send(200, "text/html", html);
@@ -181,15 +202,17 @@ void handle_planner() {
 void handle_planner_save() {
   Serial.println(__FUNCTION__);
 
-  float bias;
-  float ilimit;
   float pid[3];
-
   pid[0] = server.arg("yaw_p").toFloat();
   pid[1] = server.arg("yaw_i").toFloat();
   pid[2] = server.arg("yaw_d").toFloat();
   Serial.printf("planner yawring setpid=%f,%f,%f\n", pid[0], pid[1], pid[2]);
   planner_yawring_setpid(pid);
+
+  float yaw_want;
+  yaw_want = server.arg("yaw_want").toFloat();
+  Serial.printf("planner yawring setwant=%f\n", yaw_want);
+  planner_yawring_setyaw(&yaw_want);
 
   pid[0] = server.arg("pitch_p").toFloat();
   pid[1] = server.arg("pitch_i").toFloat();
@@ -197,6 +220,7 @@ void handle_planner_save() {
   Serial.printf("planner pitchring setpid=%f,%f,%f\n", pid[0], pid[1], pid[2]);
   planner_pitchring_setpid(pid);
 
+  float bias;
   bias = server.arg("pitch_bias").toFloat();
   Serial.printf("planner pitchring setbias=%f\n", bias);
   planner_pitchring_setbias(&bias);
@@ -207,9 +231,15 @@ void handle_planner_save() {
   Serial.printf("planner speedring setpid=%f,%f,%f\n", pid[0], pid[1], pid[2]);
   planner_speedring_setpid(pid);
 
+  float ilimit;
   ilimit = server.arg("speed_ilimit").toFloat();
   Serial.printf("planner speedhring setilimit=%f\n", ilimit);
   planner_speedring_setilimit(&ilimit);
+
+  float speed_want;
+  speed_want = server.arg("speed_want").toFloat();
+  Serial.printf("planner speedhring setspeed=%f\n", speed_want);
+  planner_speedring_setspeed(&speed_want);
 
   server.sendHeader("Location", "/planner");
   server.send(303);
@@ -307,6 +337,7 @@ void wifi_udp_poll()
   int readlen = udp.read(buf, sz);
   if(readlen < 0)return;
 
+#if 1
   char str[256] = {0};
   int printlen = (readlen<16) ? readlen : 16;
   int offs = 0;
@@ -315,6 +346,27 @@ void wifi_udp_poll()
   IPAddress ip = udp.remoteIP();
   int port = udp.remotePort();
   Serial.printf("%d.%d.%d.%d@%d -> %s\n", ip[0], ip[1], ip[2], ip[3], port, str);
+#endif
+
+  float val = 0;
+  switch(buf[0]){
+  case 's':
+    val = -5000;
+    planner_speedring_setspeed(&val);
+    break;
+  case 'w':
+    val = 5000;
+    planner_speedring_setspeed(&val);
+    break;
+  case 'a':
+    val = -600;
+    planner_yawring_setyaw(&val);
+    break;
+  case 'd':
+    val = 600;
+    planner_yawring_setyaw(&val);
+    break;
+  }
 
   if(readlen < pktlen){
     Serial.printf("(pktlen=%d, uselen=%d, drop remain)\n", pktlen, readlen);
@@ -325,7 +377,7 @@ void wifi_udp_poll()
 
 
 
-void WiFiEvent(WiFiEvent_t event) {
+void WiFiEvent(WiFiEvent_t event, arduino_event_info_t info) {
   switch (event) {
   case ARDUINO_EVENT_WIFI_OFF:   //100
     Serial.println("ARDUINO_EVENT_WIFI_OFF");
@@ -349,7 +401,16 @@ void WiFiEvent(WiFiEvent_t event) {
     Serial.println("ARDUINO_EVENT_WIFI_STA_CONNECTED");
     break;
   case ARDUINO_EVENT_WIFI_STA_DISCONNECTED:
-    Serial.println("ARDUINO_EVENT_WIFI_STA_DISCONNECTED");
+    switch(info.wifi_sta_disconnected.reason){
+    case WIFI_REASON_NO_AP_FOUND:
+      Serial.printf("ARDUINO_EVENT_WIFI_STA_DISCONNECTED: reason=WIFI_REASON_NO_AP_FOUND\n");
+      if(false==sta_connected)WiFi.setAutoReconnect(false);   //never connected
+      break;
+    default:
+      Serial.printf("ARDUINO_EVENT_WIFI_STA_DISCONNECTED: reason=%d\n", info.wifi_sta_disconnected.reason);
+      break;
+    }
+    sta_connected = false;
     break;
   case ARDUINO_EVENT_WIFI_STA_AUTHMODE_CHANGE:
     Serial.println("ARDUINO_EVENT_WIFI_STA_AUTHMODE_CHANGE");
@@ -375,7 +436,6 @@ void WiFiEvent(WiFiEvent_t event) {
     Serial.println("ARDUINO_EVENT_WIFI_AP_STACONNECTED");
     break;
   case ARDUINO_EVENT_WIFI_AP_STADISCONNECTED:
-    sta_connected = false;
     Serial.println("ARDUINO_EVENT_WIFI_AP_STADISCONNECTED");
     break;
   case ARDUINO_EVENT_WIFI_AP_STAIPASSIGNED:

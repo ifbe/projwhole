@@ -142,15 +142,13 @@ static void ontimer_output(){
   if(al < 2){   //0.001){
     digitalWrite(PIN_LEFT_EN, 1);
   }
+  else if(al<160){   //0.001){
+    ledcWrite(PIN_LEFT_STEP, 0);
+    digitalWrite(PIN_LEFT_EN, 0);
+  }
   else{
-    if(al<160){   //0.001){
-      ledcWrite(PIN_LEFT_STEP, 0);
-    }
-    else{
-      ledcChangeFrequency(PIN_LEFT_STEP, al, 8); //resolution=2^8=256
-      ledcWrite(PIN_LEFT_STEP, 128);    //duty=50%
-    }
-    //
+    ledcChangeFrequency(PIN_LEFT_STEP, al, 8); //resolution=2^8=256
+    ledcWrite(PIN_LEFT_STEP, 128);    //duty=50%
     digitalWrite(PIN_LEFT_DIR, (pwm_curr_l>0)?1:0);
     digitalWrite(PIN_LEFT_EN, 0);
   }
@@ -159,15 +157,13 @@ static void ontimer_output(){
   if(ar < 2){
     digitalWrite(PIN_RIGHT_EN, 1);
   }
+  else if(ar<160){   //0.001){
+    ledcWrite(PIN_RIGHT_STEP, 0);
+    digitalWrite(PIN_RIGHT_EN, 0);
+  }
   else{
-    if(ar<160){   //0.001){
-      ledcWrite(PIN_RIGHT_STEP, 0);
-    }
-    else{
-      ledcChangeFrequency(PIN_RIGHT_STEP, ar, 8);
-      ledcWrite(PIN_RIGHT_STEP, 128);
-    }
-    //
+    ledcChangeFrequency(PIN_RIGHT_STEP, ar, 8);
+    ledcWrite(PIN_RIGHT_STEP, 128);
     digitalWrite(PIN_RIGHT_DIR, (pwm_curr_r>0)?1:0);
     digitalWrite(PIN_RIGHT_EN, 0);
   }

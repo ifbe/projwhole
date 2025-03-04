@@ -42,6 +42,9 @@ void radian2degree(float* vec)
 
 void loop()
 {
+  //while(Serial0.available())Serial.print(Serial0.read());
+  //Serial0.println("haha");
+
   wifi_poll();
   btble_poll();
 
@@ -76,11 +79,7 @@ void loop()
   radian2degree(angle);
   //}
 
-  if(!voltok){
-    setled(16, 0, 16);
-    //Serial.printf("%f,%f,%f,%f\n", volt[0], volt[1], volt[2], volt[3]);
-  }
-  else if(fusioncount < 200){
+  if(fusioncount < 200){
     Serial.printf("%d : %f,%f,%f : %f,%f,%f\n", ms, angle[0], angle[1], angle[2], angular[0], angular[1], angular[2]);
   }
   else{
@@ -88,11 +87,11 @@ void loop()
     int anglediff = computepid(angle, angular, val, ms);
     //Serial.printf("%f -> %f,%f\n", angle[0], val[0], val[1]);
 
-    motor_output(val[0], val[1]);
+    if(voltok)motor_output(val[0], val[1]);
 
     val2led(anglediff);
 
-    //Serial.printf("%d : %f,%f,%f : %f,%f,%f : %f,%f\n", ms, angle[0], angle[1], angle[2], angular[0], angular[1], angular[2], val[0], val[1]);
+    Serial.printf("%d : %f,%f,%f : %f,%f,%f : %f,%f\n", ms, angle[0], angle[1], angle[2], angular[0], angular[1], angular[2], val[0], val[1]);
   }
 }
 
@@ -103,7 +102,8 @@ void setup()
 
   //led.init();   //no need
 
-  Serial.begin(115200);
+  Serial.begin(115200);   //serialusb(gpio19,20)
+  Serial0.begin(115200);  //uart0(gpio43,44)
 
   wifi_init();
 

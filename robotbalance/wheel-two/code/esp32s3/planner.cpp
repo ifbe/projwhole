@@ -109,8 +109,12 @@ float pseudospeed()
   return speedpwm;
 }
 
+static float speed_want = 0;
+static float speed_curr = 0;
+//
 static float speed_ilimit = 2000;
 static float speed_inte = 0;
+//
 static float speed_kp = 0;
 static float speed_ki = speed_kp/200;
 static float speed_kd = 0;
@@ -183,7 +187,7 @@ void computeangular(float* ain, float* vec)
   vec[1] = ain[1];
   vec[2] = ain[2];
 }
-static float speedpwm = 0;
+static float speed_curr = 0;
 float pseudospeed()
 {
   //float l = motor_getl();
@@ -192,14 +196,25 @@ float pseudospeed()
   motor_getpwm(&l, &r);
   float pwm = (l+r)/2;
 
-  speedpwm = speedpwm*0.7 + pwm*0.3;
-  //Serial.printf("%f %f %f %f\n", l, r, pwm, speedpwm);
-  return speedpwm;
+  speed_curr = speed_curr*0.7 + pwm*0.3;
+  //Serial.printf("%f %f %f %f\n", l, r, pwm, speed_curr);
+  if(abs(speed_curr)<100)return 0;
+  return speed_curr;
 }
+static int speed_timestamp = 0;
+static float speed_want = 0;
+float checkspeed()
+{
+  int t = millis();
+  if(t > speed_timestamp+1000)speed_want = 0;
+  return speed_want;
+}
+//
 static float speed_ilimit = 2000;
 static float speed_inte = 0;
-static float speed_kp = 1000;
-static float speed_ki = speed_kp/200;
+//
+static float speed_kp = 0.0018;  //1000;
+static float speed_ki = 0;  //speed_kp/200;
 static float speed_kd = 0;
 void speedring(float wantspeed, float currspeed, float* wantdeg)
 {
@@ -216,10 +231,10 @@ void speedring(float wantspeed, float currspeed, float* wantdeg)
   *wantdeg = val;
 }
 //
-static float pitch_bias = 7;
+static float pitch_bias = 6;
 static float pitch_kp = 500;    //750
 static float pitch_ki = 0;
-static float pitch_kd = -120;   //550
+static float pitch_kd = -200;    //-120;   //550
 void pitchring(float wantdeg, float currdeg, float an, float* out, long ms)
 {
   float err = wantdeg - currdeg;
@@ -229,11 +244,22 @@ void pitchring(float wantdeg, float currdeg, float an, float* out, long ms)
   out[1] += val;
 }
 //
+static int yaw_timestamp = 0;
+static float yaw_want = 0;
+float checkyaw()
+{
+  int t = millis();
+  if(t > yaw_timestamp+1000)yaw_want = 0;
+  return yaw_want;
+}
 static float yaw_kp = 0;
 static float yaw_ki = 0;
 static float yaw_kd = 0;
-void yawring()
+void yawring(float delta, float* out)
 {
+  float val = yaw_want;
+  out[0] -= val;
+  out[1] += val;
 }
 int computepid(float* angle, float* angular, float* out, long ms)
 {
@@ -246,17 +272,16 @@ int computepid(float* angle, float* angular, float* out, long ms)
 
   //speed -> pitch
   float wantdeg=0;
-  float currspeed = pseudospeed();
-  if(abs(deg-bias) < 10){   //small angle
-    wantdeg = 0;
-    speed_inte = 0;
-  }
-  else{
-    speedring(0, currspeed, &wantdeg);
-  }
+  float s_want = checkspeed();
+  float s_curr = pseudospeed();
+  speedring(s_want, s_curr, &wantdeg);
 
   //pitch -> force
-  pitchring(-pitch_bias+wantdeg, deg, an, out, ms);
+  pitchring(bias+wantdeg, deg, an, out, ms);
+
+  //yaw -> force
+  float y_delta = checkyaw();;
+  yawring(y_delta, out);
 
   //led
   return deg-bias;
@@ -286,8 +311,12 @@ float pseudospeed()
   //Serial.printf("%f %f %f %f\n", l, r, pwm, speedpwm);
   return speedpwm;
 }
+static float speed_want = 0;
+static float speed_curr = 0;
+//
 static float speed_ilimit = 2000;
 static float speed_inte = 0;
+//
 static float speed_kp = 1000;
 static float speed_ki = speed_kp/200;
 static float speed_kd = 0;
@@ -370,6 +399,16 @@ void planner_speedring_setilimit(float* ilimit)
 {
   speed_ilimit = *ilimit;
 }
+void planner_speedring_getspeed(float* want, float* curr)
+{
+  *want = speed_want;
+  *curr = speed_curr;
+}
+void planner_speedring_setspeed(float* want)
+{
+  speed_want = *want;
+  speed_timestamp = millis();
+}
 //--------
 void planner_pitchring_getpid(float* pid)
 {
@@ -403,4 +442,13 @@ void planner_yawring_setpid(float* pid)
   yaw_kp = pid[0];
   yaw_ki = pid[1];
   yaw_kd = pid[2];
+}
+void planner_yawring_getyaw(float* y)
+{
+  y[0] = yaw_want;
+}
+void planner_yawring_setyaw(float* y)
+{
+  yaw_want = *y;
+  yaw_timestamp = millis();
 }
