@@ -124,18 +124,44 @@ else if(type==2){       //motor2.shaft to finger
 }
 else if(type==10){      //bulk box
     difference(){
+        union(){
+            translate([0, 0, 30+10/2])cube([54, 50, 10], center=true);
+            hull(){
+            translate([0, 0, 30])cube([54, 50, 0.001], center=true);
+            translate([0, 0, 20])cube([54, 30, 0.001], center=true);
+            }
+        }
+        //hole x
+        translate([ 0, 10, 40-5])rotate([0,90,0])cylinder(r=2, h=99, center=true, $fn=50);
+        translate([ 0,-10, 40-5])rotate([0,90,0])cylinder(r=2, h=99, center=true, $fn=50);
+        //hole y
+        translate([ 10, 0, 40-5])rotate([90,0,0])cylinder(r=2, h=99, center=true, $fn=50);
+        translate([-10, 0, 40-5])rotate([90,0,0])cylinder(r=2, h=99, center=true, $fn=50);
+        //upper
+        translate([0, 0, 40-10/2])cube([52, 48, 11], center=true);
+        //bottom
+        translate([0, 0, 20+9/2])cube([99, 16, 9], center=true);
+    }
+    
+    
+    difference(){
     translate([0, 0, 20/2])cube([80, 40, 20], center=true);
     //upper
-    translate([0, 0, 20-4/2])cube([99, 38, 4], center=true);
-    //bot.xxxxx
-    translate([40-28/2, 0, 10])cube([28.01, 38, 20], center=true);
+    translate([0, 0, 20-4/2])cube([99, 16, 4], center=true);
+    //bot.switch
+    translate([40-28/2, 0, 10])cube([28.01, 36, 20], center=true);
     //bot.bulk
     translate([-80/2+52/2, 0, 1+(14)/2])cube([52.01, 30+0.4, 14], center=true);
-    //hole
+    //hole y
     translate([ 30, 0, 10])rotate([90,0,0])cylinder(r=1.6, h=99, center=true, $fn=50);
     translate([ 10, 0, 10])rotate([90,0,0])cylinder(r=1.6, h=99, center=true, $fn=50);
     translate([-10, 0, 10])rotate([90,0,0])cylinder(r=1.6, h=99, center=true, $fn=50);
     translate([-30, 0, 10])rotate([90,0,0])cylinder(r=1.6, h=99, center=true, $fn=50);
+    //hole z
+    translate([ 30, 0, 0])cylinder(r=1.6, h=99, center=true, $fn=50);
+    translate([ 10, 0, 0])cylinder(r=1.6, h=99, center=true, $fn=50);
+    translate([-10, 0, 0])cylinder(r=1.6, h=99, center=true, $fn=50);
+    translate([-30, 0, 0])cylinder(r=1.6, h=99, center=true, $fn=50);
     }
 }
 else if(type==99){
