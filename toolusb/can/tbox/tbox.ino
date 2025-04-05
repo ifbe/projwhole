@@ -12,6 +12,7 @@ static int enable = 1;
 
 uint32_t canid_tacspeed = 0x0cfe6cee;
 float m_tacspeed = 0;
+static int d_tacspeed = 0;
 void builddata_tacspeed(uint8_t* buf, float speed){
   uint16_t val = speed / 0.0039065;
   buf[0] = 0;
@@ -32,7 +33,8 @@ void buildframe_tacspeed(CanFrame* pkt, float speed){
 }
 void sendframe_tacspeed(float speed){
   CanFrame pkt;
-  buildframe_tacspeed(&pkt, speed);
+  buildframe_tacspeed(&pkt, speed+d_tacspeed*0.01);
+  d_tacspeed = (d_tacspeed+1)%3;
   ESP32Can.writeFrame(pkt);
 }
 
@@ -44,6 +46,7 @@ int m_brake = 0;    //0=no,1=down,2=err,3=invalid
 int m_clutch = 0;
 void builddata_speed_brake_clutch(uint8_t* buf, uint8_t hb, float speed, uint8_t brake, uint8_t clutch) {
   uint16_t spd = (uint16_t)(speed*256);
+  //Serial.printf("%f, %d\n",speed, spd);
   brake &= 3;
   clutch &= 3;
   hb &= 3;
@@ -57,14 +60,16 @@ void builddata_speed_brake_clutch(uint8_t* buf, uint8_t hb, float speed, uint8_t
 	buf[7] = 0;
 }
 void buildframe_speed_brake_clutch(CanFrame* pkt, uint8_t hb, float speed, uint8_t brake, uint8_t clutch) {
+  //Serial.println(speed);
   builddata_speed_brake_clutch(pkt->data, hb, speed, brake, clutch);
 	pkt->data_length_code = 8;
 	pkt->extd = 1;
 	pkt->identifier = canid_speedclutchbrake;
   ESP32Can.writeFrame(pkt);  // timeout defaults to 1 ms
 }
-void sendframe_speed_brake_clutch(float speed, uint8_t hb, uint8_t brake, uint8_t clutch){
+void sendframe_speed_brake_clutch(uint8_t hb, float speed, uint8_t brake, uint8_t clutch){
   CanFrame pkt;
+  //Serial.println(speed);
   buildframe_speed_brake_clutch(&pkt, hb, speed, brake, clutch);
   ESP32Can.writeFrame(pkt);
 }
@@ -466,6 +471,7 @@ void testsend()
   //
   sendframe_tacspeed(m_tacspeed);
   //
+  //Serial.println(m_speed);
   sendframe_speed_brake_clutch(m_handbrake, m_speed, m_brake, m_clutch);
   //sendframe_clutch(m_clutch);
   //
