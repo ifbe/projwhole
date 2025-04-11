@@ -8,13 +8,131 @@
 #define CAN_RX 2    //4
 static uint32_t lastStamp = 0;
 static int enable = 1;
+static int runmode = 0;
+
+
+void print_canid_and_data(uint32_t canid, uint8_t* data)
+{
+  Serial.printf("%08x:%02x %02x %02x %02x %02x %02x %02x %02x\n", canid,
+    data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]
+  );
+}
+
+
+
+uint8_t oneframe_data[8] = {};
+uint32_t oneframe_canid = 0;
+char oneframe_en = 0;
+void special(){
+  if(oneframe_en==0)return;
+  Serial.println(__FUNCTION__);
+
+  CanFrame pkt;
+  for(int j=0;j<8;j++)pkt.data[j] = oneframe_data[j];
+	pkt.data_length_code = 8;
+	pkt.extd = 1;
+	pkt.identifier = oneframe_canid;
+  ESP32Can.writeFrame(pkt);
+
+  print_canid_and_data(pkt.identifier, pkt.data);
+  oneframe_en = 0;
+}
+
+
+char test66_type = 3;
+char testreq_en = 0;
+char testres_en = 0;
+void testreq(){
+  if(testreq_en==0)return;
+  Serial.println(__FUNCTION__);
+
+  CanFrame pkt;
+  switch(test66_type){
+  case 0:
+    pkt.data[0] = 0x10;
+    pkt.data[1] = 0x1b;
+    pkt.data[2] = 0x2e;
+    pkt.data[3] = 0xf1;
+    pkt.data[4] = 0xa1;
+    break;
+  case 1:
+    pkt.data[0] = 0x04;
+    pkt.data[1] = 0x31;
+    pkt.data[2] = 0x01;
+    pkt.data[3] = 0x61;
+    pkt.data[4] = 0x40;
+    break;
+  case 2:
+    pkt.data[0] = 0x10;
+    pkt.data[1] = 0x15;
+    pkt.data[2] = 0x2e;
+    pkt.data[3] = 0x35;
+    pkt.data[4] = 0x01;
+    break;
+  case 3:
+    pkt.data[0] = 0x06;
+    pkt.data[1] = 0x31;
+    pkt.data[2] = 0x01;
+    pkt.data[3] = 0x61;
+    pkt.data[4] = 0x41;
+    break;
+  }
+	pkt.data_length_code = 8;
+	pkt.extd = 1;
+	pkt.identifier = 0x18da21f9;
+  ESP32Can.writeFrame(pkt);
+
+  print_canid_and_data(pkt.identifier, pkt.data);
+  testreq_en = 0;
+}
+void testres(){
+  if(testres_en==0)return;
+  Serial.println(__FUNCTION__);
+
+  CanFrame pkt;
+  switch(test66_type){
+  case 0:
+    pkt.data[0] = 0x03;
+    pkt.data[1] = 0x6e;
+    pkt.data[2] = 0xf1;
+    pkt.data[3] = 0xa1;
+    break;
+  case 1:
+    pkt.data[0] = 0x04;
+    pkt.data[1] = 0x71;
+    pkt.data[2] = 0x01;
+    pkt.data[3] = 0x61;
+    pkt.data[4] = 0x40;
+    break;
+  case 2:
+    pkt.data[0] = 0x03;
+    pkt.data[1] = 0x6e;
+    pkt.data[2] = 0x35;
+    pkt.data[3] = 0x01;
+    break;
+  case 3:
+    pkt.data[0] = 0x05;
+    pkt.data[1] = 0x71;
+    pkt.data[2] = 0x01;
+    pkt.data[3] = 0x61;
+    pkt.data[4] = 0x41;
+    break;
+  }
+	pkt.data_length_code = 8;
+	pkt.extd = 1;
+	pkt.identifier = 0x18daf921;
+  ESP32Can.writeFrame(pkt);
+
+  print_canid_and_data(pkt.identifier, pkt.data);
+  testres_en = 0;
+}
 
 
 uint32_t canid_tacspeed = 0x0cfe6cee;
 float m_tacspeed = 0;
 static int d_tacspeed = 0;
 void builddata_tacspeed(uint8_t* buf, float speed){
-  uint16_t val = speed / 0.0039065;
+  uint16_t val = speed * 256;
   buf[0] = 0;
   buf[1] = 0;
   buf[2] = 0;
@@ -34,7 +152,38 @@ void buildframe_tacspeed(CanFrame* pkt, float speed){
 void sendframe_tacspeed(float speed){
   CanFrame pkt;
   buildframe_tacspeed(&pkt, speed+d_tacspeed*0.01);
-  d_tacspeed = (d_tacspeed+1)%3;
+  //d_tacspeed = (d_tacspeed+1)%3;
+  ESP32Can.writeFrame(pkt);
+}
+
+
+
+
+uint32_t canid_idleinfo = 0x18FEDC00;
+float m_idleliter = 0;
+float m_idlesec = 0;
+void builddata_idleinfo(uint8_t* buf, float liter, float sec){
+  uint32_t lo4 = liter * 2;
+  uint32_t hi4 = sec*20/3600;
+  buf[0] = lo4 & 0xff;
+  buf[1] = (lo4>>8) & 0xff;
+  buf[2] = (lo4>>16) & 0xff;
+  buf[3] = (lo4>>24) & 0xff;
+  buf[4] = hi4 & 0xff;
+  buf[5] = (hi4>>8)&0xff;
+  buf[6] = (hi4>>16) & 0xff;
+  buf[7] = (hi4>>24) & 0xff;
+}
+void buildframe_idleinfo(CanFrame* pkt, float liter, float sec){
+  builddata_idleinfo(pkt->data, liter, sec);
+	pkt->data_length_code = 8;
+	pkt->extd = 1;
+	pkt->identifier = canid_idleinfo;
+  ESP32Can.writeFrame(pkt);
+}
+void sendframe_idleinfo(float liter, float sec){
+  CanFrame pkt;
+  buildframe_idleinfo(&pkt, liter, sec);
   ESP32Can.writeFrame(pkt);
 }
 
@@ -449,10 +598,18 @@ void sendframe_belt(uint8_t belt){
 }
 
 
+void send_inputcmd()
+{
+  uint32_t currentStamp = millis();
+  if(currentStamp < lastStamp + 100)return;
+  lastStamp = currentStamp;
 
+  if(0 == enable)return;
 
+  special();
+}
 
-void testsend()
+void send_forever()
 {
   uint32_t currentStamp = millis();
   if(currentStamp < lastStamp + 100)return;
@@ -492,7 +649,45 @@ void testsend()
   sendframe_torquemode_torquepercent_rpm(m_torquemode, m_torquepercent, m_rpm);
   //
   sendframe_frictionpercent(m_frictionpercent);
+  //
+  sendframe_idleinfo(m_idleliter, m_idlesec);
+  //
+  testreq();
+  testres();
+  //
+  special();
 }
+
+
+int loopcount = 0;
+float accel = 1.0;
+void send_accelerate()
+{
+  uint32_t currentStamp = millis();
+  if(currentStamp < lastStamp + 100)return;
+  lastStamp = currentStamp;
+
+  if(0 == enable)return;
+
+  sendframe_torquemode_torquepercent_rpm(m_torquemode, m_torquepercent, m_rpm);
+  //
+  sendframe_speed_brake_clutch(m_handbrake, m_speed, m_brake, m_clutch);
+  //
+  sendframe_accpedal_loadrate(m_accpedal, m_loadrate);
+
+  float ms2 = accel / 10.0;
+  float kmh = ms2 * 3.6;
+  float sum = m_tacspeed + kmh;
+  if( (sum>=0) && (sum < 90) ){
+    m_tacspeed = sum;
+    Serial.printf("%f, %f, %f\n", ms2, kmh, m_tacspeed);
+  }
+  sendframe_tacspeed(m_tacspeed);
+
+  if(loopcount<60)loopcount++;
+}
+
+
 void readcan()
 {
   CanFrame pkt;
@@ -505,25 +700,17 @@ void readcan()
 }
 
 
-void print_canid_and_data(uint32_t canid, uint8_t* data)
-{
-  Serial.printf("%08x:%02x %02x %02x %02x %02x %02x %02x %02x\n", canid,
-    data[0], data[1], data[2], data[3], data[4], data[5], data[6], data[7]
-  );
-}
-
-
-int str2float(char* str, float* f){
-  if( ((str[0]>='0') && (str[0]<='9')) || (str[0]=='-') ){
-    *f = atof(str);
-    return 1;
-  }
-  return 0;
-}
 void parsecmd(char* key, float val)
 {
   uint8_t buf[8];
-  if(strncmp(key, "tacspeed", 8)==0){
+  if(strncmp(key, "mode", 4)==0){
+    loopcount = 0;
+    runmode = int(val+0.1);
+  }
+  else if(strncmp(key, "accel", 5)==0){
+    accel = val;
+  }
+  else if(strncmp(key, "tacspeed", 8)==0){
     m_tacspeed = val;
 
     builddata_tacspeed(buf, m_tacspeed);
@@ -676,12 +863,86 @@ void parsecmd(char* key, float val)
     builddata_belt(buf, m_belt);
     print_canid_and_data(canid_belt, buf);
   }
+  else if(strncmp(key, "idleliter", 6)==0){
+    m_idleliter = val;
+    Serial.printf("(cmd)idleliter = %d\n", m_idleliter);
+
+    builddata_idleinfo(buf, m_idleliter, m_idlesec);
+    print_canid_and_data(canid_idleinfo, buf);
+  }
+  else if(strncmp(key, "idlesec", 7)==0){
+    m_idlesec = val;
+    Serial.printf("(cmd)idlesec = %d\n", m_idlesec);
+
+    builddata_idleinfo(buf, m_idleliter, m_idlesec);
+    print_canid_and_data(canid_idleinfo, buf);
+  }
+}
+int str2float(char* str, float* f){
+  if( ((str[0]>='0') && (str[0]<='9')) || (str[0]=='-') ){
+    *f = atof(str);
+    return 1;
+  }
+  return 0;
+}
+int str2canid(char *str, uint32_t *result) {
+    char *endptr;
+    unsigned long temp;
+
+    if (str == NULL || *str == '\0') {
+        return -1;
+    }
+
+    while (isspace((unsigned char)*str)) {
+        str++;
+    }
+
+    temp = strtoul(str, &endptr, 16);
+    if (endptr == str) {
+        return -2;
+    }
+    //Serial.println(str);
+    //Serial.printf("===%x\n",temp);
+
+    *result = (uint32_t)temp;
+    return 0;
+}
+int str2candata(char *str, uint8_t *data) {
+  while(*str == ' ')str++;
+
+  int cnt = 0;
+  int k = 0;
+  for(int j=0;j<64;j++){
+    //Serial.printf("aaaaaa %d %x\n", j, str[j]);
+    if(str[j] <= 0x20){
+      data[cnt] = strtol(str+k, nullptr, 16);
+      //Serial.printf("%d %x", cnt, data[cnt]);
+
+      cnt++;
+      if(cnt >= 8)break;
+
+      if(str[j] != 0x20)break;
+      else{
+        while(str[j+1] == ' ')j++;
+        k = j+1;
+      }
+    }
+  }
+  return cnt;
 }
 void parsestr(char* str){
   int j,ret;
   float val;
   for(j=0;j<64;j++){
     if(str[j]==':'){
+      bool ret1 = str2canid(str, &oneframe_canid);
+      bool ret2 = str2candata(str+j+1, oneframe_data);
+
+      if((ret1>=0) && (ret2>0)){
+        print_canid_and_data(oneframe_canid, oneframe_data);
+        oneframe_en = 1;
+      }
+      break;
     }
     if(str[j]==' '){
       ret = str2float(str+j+1, &val);
@@ -727,6 +988,16 @@ void parseraw(char* str){
     Serial.println("disabled");
     return;
   }
+  else if(strncmp(str, "req", 3)==0){
+    Serial.println("req");
+    testreq_en = 1;
+    return;
+  }
+  else if(strncmp(str, "res", 3)==0){
+    Serial.println("res");
+    testres_en = 1;
+    return;
+  }
 
   parsestr(str);
 }
@@ -757,7 +1028,17 @@ void loop() {
 
   readcan();
 
-  testsend();
+  switch(runmode){
+  case 0:
+    send_inputcmd();
+    break;
+  case 1:
+    send_forever();
+    break;
+  case 2:
+    send_accelerate();
+    break;
+  }
 }
 void setup() {
   // Setup serial for debbuging.
@@ -767,8 +1048,8 @@ void setup() {
 	ESP32Can.setPins(CAN_TX, CAN_RX);
 
   // You can set custom size for the queues - those are default
-  ESP32Can.setRxQueueSize(5);
-	ESP32Can.setTxQueueSize(5);
+  ESP32Can.setRxQueueSize(50);
+	ESP32Can.setTxQueueSize(50);
 
   // .setSpeed() and .begin() functions require to use TwaiSpeed enum,
   // but you can easily convert it from numerical value using .convertSpeed()
