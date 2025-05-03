@@ -4,6 +4,10 @@
 static uint32_t lastStamp = 0;
 
 
+#define queuemax 8
+CanFrame queuebuf[queuemax];
+int queueenq = 0;
+int queuedeq = 0;
 
 
 #define masterid 0
@@ -45,71 +49,107 @@ static uint32_t lastStamp = 0;
 #define Communication_Type_SetSingleParameter 0x12	//设定单个参数
 #define Communication_Type_ErrorFeedback 0x15	      //故障反馈帧
 
+void buildframe_getid(CanFrame* pkt)
+{
+	for(int j=0;j<8;j++)pkt->data[8] = 0;
+	pkt->data_length_code = 8;
+	pkt->identifier = (Communication_Type_GetID<<24) | (masterid<<8) | motorid;
+	pkt->extd = 1;
+}
 void getid() {
   CanFrame pkt;
-	for(int j=0;j<8;j++)pkt.data[8] = 0;
-	pkt.data_length_code = 8;
-	pkt.identifier = (Communication_Type_GetID<<24) | (masterid<<8) | motorid;
-	pkt.extd = 1;
+  buildframe_getid(&pkt);
   ESP32Can.writeFrame(pkt);  // timeout defaults to 1 ms
 }
 
+void buildframe_zeropoint(CanFrame* pkt)
+{
+	for(int j=0;j<8;j++)pkt->data[8] = 0;
+	pkt->data_length_code = 8;
+	pkt->identifier = (Communication_Type_SetPosZero<<24) | (masterid<<8) | motorid;
+	pkt->extd = 1;
+}
 void zeropoint() {
   CanFrame pkt;
-	for(int j=0;j<8;j++)pkt.data[8] = 0;
-	pkt.data_length_code = 8;
-	pkt.identifier = (Communication_Type_SetPosZero<<24) | (masterid<<8) | motorid;
-	pkt.extd = 1;
+  buildframe_zeropoint(&pkt);
   ESP32Can.writeFrame(pkt);  // timeout defaults to 1 ms
 }
 
+void buildframe_start(CanFrame* pkt)
+{
+  for(int j=0;j<8;j++)pkt->data[8] = 0;
+	pkt->data_length_code = 8;
+	pkt->identifier = (Communication_Type_MotorEnable<<24) | (masterid<<8) | motorid;
+	pkt->extd = 1;
+}
 void start() {
   CanFrame pkt;
-	for(int j=0;j<8;j++)pkt.data[8] = 0;
-	pkt.data_length_code = 8;
-	pkt.identifier = (Communication_Type_MotorEnable<<24) | (masterid<<8) | motorid;
-	pkt.extd = 1;
+	buildframe_start(&pkt);
   ESP32Can.writeFrame(pkt);  // timeout defaults to 1 ms
 }
 
+void buildframe_stop(CanFrame* pkt)
+{
+  for(int j=0;j<8;j++)pkt->data[8] = 0;
+	pkt->data_length_code = 8;
+	pkt->identifier = (Communication_Type_MotorStop<<24) | (masterid<<8) | motorid;
+	pkt->extd = 1;
+}
 void stop() {
   CanFrame pkt;
-	for(int j=0;j<8;j++)pkt.data[8] = 0;
-	pkt.data_length_code = 8;
-	pkt.identifier = (Communication_Type_MotorStop<<24) | (masterid<<8) | motorid;
-	pkt.extd = 1;
+	buildframe_stop(&pkt);
   ESP32Can.writeFrame(pkt);  // timeout defaults to 1 ms
 }
 
 
+void buildframe_setmode(CanFrame* pkt, int mode)
+{
+  for(int j=0;j<8;j++)pkt->data[8] = 0;
+	pkt->data[0] = RUN_MODE&0xff;
+	pkt->data[1] = RUN_MODE>>8;
+	pkt->data[4] = mode;
+	pkt->identifier = (Communication_Type_SetSingleParameter<<24) | (masterid<<8) | motorid;
+	pkt->extd = 1;
+}
 void setmode(int mode)
 {
 	CanFrame pkt;
-	for(int j=0;j<8;j++)pkt.data[8] = 0;
-	pkt.data[0] = RUN_MODE&0xff;
-	pkt.data[1] = RUN_MODE>>8;
-	pkt.data[4] = mode;
-	pkt.identifier = (Communication_Type_SetSingleParameter<<24) | (masterid<<8) | motorid;
-	pkt.extd = 1;
+  buildframe_setmode(&pkt, mode);
   ESP32Can.writeFrame(pkt);
+}
+
+
+void buildframe_setparameter(CanFrame* pkt, uint16_t Index,float Ref)
+{
+	for(int j=0;j<8;j++)pkt->data[8] = 0;
+	memcpy(&pkt->data[0],&Index, 2);
+	memcpy(&pkt->data[4],&Ref,4);
+	pkt->identifier = (Communication_Type_SetSingleParameter<<24) | (masterid<<8) | motorid;
+	pkt->extd = 1;
 }
 void Set_Motor_Parameter(uint16_t Index,float Ref)
 {
 	CanFrame pkt;
-	for(int j=0;j<8;j++)pkt.data[8] = 0;
-	memcpy(&pkt.data[0],&Index, 2);
-	memcpy(&pkt.data[4],&Ref,4);
-	pkt.identifier = (Communication_Type_SetSingleParameter<<24) | (masterid<<8) | motorid;
-	pkt.extd = 1;
+  buildframe_setparameter(&pkt, Index, Ref);
   ESP32Can.writeFrame(pkt);
 }
 
 void testsend()
 {
   uint32_t currentStamp = millis();
-  if(currentStamp < lastStamp + 1000)return;
+  if(currentStamp < lastStamp + 100)return;
   lastStamp = currentStamp;
 
+  if(queueenq == queuedeq)return;
+  CanFrame* pkt = &queuebuf[queuedeq];
+
+  char str[64] = {0};
+  int tmp = 0;
+  for(int j=0;j<pkt->data_length_code;j++)tmp += snprintf(str+tmp, 32-tmp, "%02x%c", pkt->data[j], (j+1<pkt->data_length_code) ? ' ' : '\0');
+  Serial.printf("send %08x : %s\n", pkt->identifier, str);
+
+  ESP32Can.writeFrame(pkt);
+  queuedeq = (queuedeq+1)%queuemax;
 }
 void readcan()
 {
@@ -135,30 +175,44 @@ void parsecmd(char* key, float val)
 {
   if(strncmp(key, "mode", 4)==0){
     int mode = int(val+0.1);
-    setmode(mode);
-  }
-  else if(strncmp(key, "zero", 4)==0){
-    zeropoint();
+    //setmode(mode);
+
+    buildframe_stop(&queuebuf[queueenq]);
+    queueenq = (queueenq+1)%queuemax;
+
+    buildframe_setmode(&queuebuf[queueenq], mode);
+    queueenq = (queueenq+1)%queuemax;
+
+    buildframe_start(&queuebuf[queueenq]);
+    queueenq = (queueenq+1)%queuemax;
   }
   else if(strncmp(key, "position", 4)==0){
     Serial.printf("(cmd)position = %f\n", val);
 
-    setmode(POS_MODE);
-    start();
+    //setmode(POS_MODE);
+    //start();
 
-    Set_Motor_Parameter(LIMIT_SPD, PI*2);
+    //Set_Motor_Parameter(LIMIT_SPD, PI*2);
+    buildframe_setparameter(&queuebuf[queueenq], LIMIT_SPD, PI*2);
+    queueenq = (queueenq+1)%queuemax;
 
-	  Set_Motor_Parameter(LOC_REF, val);
+	  //Set_Motor_Parameter(LOC_REF, val);
+    buildframe_setparameter(&queuebuf[queueenq], LOC_REF, val);
+    queueenq = (queueenq+1)%queuemax;
   }
   else if(strncmp(key, "speed", 5)==0){
     Serial.printf("(cmd)speed = %f\n", val);
 
-    setmode(SPEED_MODE);
-    start();
+    //setmode(SPEED_MODE);
+    //start();
 
-    Set_Motor_Parameter(LIMIT_CUR, 1);
+    //Set_Motor_Parameter(LIMIT_CUR, 1);
+    buildframe_setparameter(&queuebuf[queueenq], LIMIT_CUR, 1);
+    queueenq = (queueenq+1)%queuemax;
 
-	  Set_Motor_Parameter(SPD_REF, val);
+	  //Set_Motor_Parameter(SPD_REF, val);
+    buildframe_setparameter(&queuebuf[queueenq], SPD_REF, val);
+    queueenq = (queueenq+1)%queuemax;
   }
 }
 void parsestr(char* str){
@@ -194,16 +248,28 @@ void readserial(){
 
   Serial.printf("(read)%s",str);
   if(strncmp(str, "getid", 5)==0){
-    getid();
+    //getid();
+    buildframe_getid(&queuebuf[queueenq]);
+    queueenq = (queueenq+1)%queuemax;
+  }
+  else if(strncmp(str, "zero", 4)==0){
+    //zeropoint();
+    buildframe_zeropoint(&queuebuf[queueenq]);
+    queueenq = (queueenq+1)%queuemax;
   }
   else if(strncmp(str, "start", 5)==0){
-    start();
+    //start();
+    buildframe_start(&queuebuf[queueenq]);
+    queueenq = (queueenq+1)%queuemax;
   }
   else if(strncmp(str, "stop", 4)==0){
-    stop();
+    //stop();
+    buildframe_stop(&queuebuf[queueenq]);
+    queueenq = (queueenq+1)%queuemax;
   }
-
-  parsestr(str);
+  else{
+    parsestr(str);
+  }
 }
 
 
@@ -239,7 +305,7 @@ void setup() {
   getid();
 
   zeropoint();
-
+/*
   int mode = POS_MODE;
   switch(mode){
   case CTRL_MODE:       //0
@@ -264,4 +330,5 @@ void setup() {
     Set_Motor_Parameter(IQ_REF, PI);
     break;
   }
+  */
 }
