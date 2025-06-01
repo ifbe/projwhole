@@ -58,7 +58,7 @@
     "ssh_key": ""
   },
   "meta": {
-    "filename": "kbd5x5.kicad_prl",
+    "filename": "kbd2x2.kicad_prl",
     "version": 5
   },
   "net_inspector_panel": {
@@ -87,16 +87,16 @@
       9
     ],
     "col_widths": [
-      174,
-      159,
-      100,
+      156,
+      141,
+      103,
       63,
-      100,
-      100,
-      100,
+      103,
+      103,
+      103,
       63,
-      100,
-      100
+      103,
+      103
     ],
     "custom_group_rules": [],
     "expanded_rows": [],
