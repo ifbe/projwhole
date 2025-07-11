@@ -231,10 +231,10 @@ void speedring(float wantspeed, float currspeed, float* wantdeg)
   *wantdeg = val;
 }
 //
-static float pitch_bias = 6;
+static float pitch_bias = 2;
 static float pitch_kp = 500;    //750
 static float pitch_ki = 0;
-static float pitch_kd = -200;    //-120;   //550
+static float pitch_kd = -250;    //-120;   //550
 void pitchring(float wantdeg, float currdeg, float an, float* out, long ms)
 {
   float err = wantdeg - currdeg;

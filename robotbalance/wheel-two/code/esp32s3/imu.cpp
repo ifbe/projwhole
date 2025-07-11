@@ -8,11 +8,14 @@
 #if IMUTYPE_SELECT==IMUTYPE_MPU6050
 #include <MPU6050.h>
 MPU6050 mpu;
+int imugood = 0;
 float bias_gx = 0;
 float bias_gy = 0;
 float bias_gz = 0;
-void imu_read(float* gyr, float* acc)
+int imu_read(float* gyr, float* acc)
 {
+  if(0 == imugood)return -1;
+
   int16_t ax, ay, az, gx, gy, gz;
   mpu.getMotion6(&ax, &ay, &az, &gx, &gy, &gz);
   //Serial.printf("raw: a=(%d,%d,%d) g=(%d,%d,%d) t=%d\n", ax,ay,az, gx,gy,gz, ms);
@@ -25,6 +28,7 @@ void imu_read(float* gyr, float* acc)
   acc[1] = (-2*ay) * 2.0 / 32768;
   acc[2] = (-2*az) * 2.0 / 32768;
   //Serial.printf("std: a=(%f,%f,%f) g=(%f,%f,%f) t=%d\n", fax,fay,faz, fgx,fgy,fgz, ms);
+  return true;
 }
 void imu_init()
 {
@@ -34,7 +38,8 @@ void imu_init()
 
   if(mpu.testConnection() ==  false){
     Serial.println("MPU6050 connection failed");
-    while(true);
+    imugood = 0;
+    return;
   }
 
 #if 0
@@ -55,6 +60,7 @@ void imu_init()
   bias_gy = -66.5;
   bias_gz = 14.3;
 #endif
+  imugood = true;
 }
 #endif
 
@@ -64,7 +70,10 @@ void imu_init()
 #if IMUTYPE_SELECT==IMUTYPE_MPU9250
 #include <MPU9250.h>
 MPU9250 mpu;
-void imu_read(float* gyr, float* acc){
+int imugood = 0;
+int imu_read(float* gyr, float* acc){
+  if(0 == imugood)return -1;
+
   if (mpu.available()){
     mpu.update_accel_gyro();
     mpu.update_mag();
@@ -86,11 +95,12 @@ void imu_init() {
   Wire.begin(pin_sda, pin_scl);
 
   if (!mpu.setup(0x68)) {
-      while (1) {
-          Serial.println("MPU connection failed. Please check your connection with `connection_check` example.");
-          delay(5000);
-      }
+    Serial.println("MPU connection failed. Please check your connection with `connection_check` example.");
+    imugood = 0;
+    return;
   }
+
+  imugood = true;
 }
 /*
 #include <MPU6050.h>
@@ -132,6 +142,7 @@ void imu_init()
 #if IMUTYPE_SELECT==IMUTYPE_ICM42688
 #include <ICM42688.h>
 ICM42688* imu = 0;
+int imugood = 0;
 void imu_init()
 {
   pinMode(pin_ad0, OUTPUT);
@@ -144,17 +155,21 @@ void imu_init()
   int status = imu->begin();
   if (status < 0) {
     Serial.println("IMU initialization unsuccessful");
-    while(true);
+    imugood = 0;
+    return;
   }
 
   // setting the accelerometer full scale range to +/-8G
   imu->setAccelFS(ICM42688::gpm8);
   // setting the gyroscope full scale range to +/-500 deg/s
   imu->setGyroFS(ICM42688::dps500);
+  //
+  imugood = true;
 }
-void imu_read(float* gyr, float* acc)
+int imu_read(float* gyr, float* acc)
 {
-  if(0 == imu)return;
+  if(0 == imu)return -1;
+  if(0 == imugood)return -2;
 
   imu->getAGT();
 
@@ -169,6 +184,7 @@ void imu_read(float* gyr, float* acc)
   acc[2] = - imu->accZ();
 
   //Serial.printf("ms=%d temp=%f g=(%f,%f,%f) a=(%f,%f,%f)\n", ms, temp, gyr[0], gyr[1], gyr[2], acc[0], acc[1], acc[2]);
+  return 1;
 }
 #endif
 
@@ -178,6 +194,7 @@ void imu_read(float* gyr, float* acc)
 #if IMUTYPE_SELECT==IMUTYPE_BMI270
 #include "SparkFun_BMI270_Arduino_Library.h"
 BMI270 imu;
+int imugood = 0;
 uint8_t i2cAddress = BMI2_I2C_PRIM_ADDR; // 0x68
 //uint8_t i2cAddress = BMI2_I2C_SEC_ADDR; // 0x69
 void imu_init()
@@ -187,19 +204,20 @@ void imu_init()
 
   Wire.begin(pin_sda, pin_scl);
 
-  while(imu.beginI2C(i2cAddress) != BMI2_OK)
+  if(imu.beginI2C(i2cAddress) != BMI2_OK)
   {
-      // Not connected, inform user
-      Serial.println("Error: BMI270 not connected, check wiring and I2C address!");
-
-      // Wait a bit to see if connection is established
-      delay(1000);
+    Serial.println("Error: BMI270 not connected, check wiring and I2C address!");
+    imugood = 0;
+    return;
   }
 
   Serial.println("BMI270 connected!");
+  imugood = true;
 }
-void imu_read(float* gyr, float* acc)
+int imu_read(float* gyr, float* acc)
 {
+  if(0 == imugood)return -1;
+
   imu.getSensorData();
 
   gyr[0] = imu.data.gyroX * PI / 180;
@@ -209,5 +227,7 @@ void imu_read(float* gyr, float* acc)
   acc[0] = - imu.data.accelX;
   acc[1] = - imu.data.accelY;
   acc[2] = - imu.data.accelZ;
+
+  return 1;
 }
 #endif

@@ -279,6 +279,7 @@ void handle_battery() {
 }
 
 void handleRoot() {
+  //Serial.printf("%s\n", __FUNCTION__);
   handle_wifi();
 }
 
@@ -456,7 +457,7 @@ void WiFiEvent(WiFiEvent_t event, arduino_event_info_t info) {
 void wifi_init()
 {
   //load
-  loadCredentials(sta_ssid, sta_pass);
+  if(sta_ssid.equals(""))loadCredentials(sta_ssid, sta_pass);
   Serial.printf("ap: ssid=%s, pass=%s\n", ap_ssid, ap_pass);
   Serial.printf("sta: ssid=%s, pass=%s\n", sta_ssid.c_str(), sta_pass.c_str());
 
@@ -469,7 +470,16 @@ void wifi_init()
 
   //sta
   if( (sta_ssid[0]>=' ')&&(sta_ssid[0]<0x80) ){
+    Serial.println("wifi.begin");
     WiFi.begin(sta_ssid.c_str(), sta_pass.c_str());
+
+    for(int j=0;j<3;j++){
+      if(WiFi.status() == WL_CONNECTED) {
+        Serial.println("WL_CONNECTED");
+        break;
+      }
+      delay(500);
+    }
   }
 
   //web

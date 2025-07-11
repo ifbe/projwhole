@@ -59,7 +59,8 @@ void loop()
 
   float gyr[3];
   float acc[3];
-  imu_read(gyr, acc);
+  int imuret = imu_read(gyr, acc);
+  if(imuret < 0)return;
 
   float angular[3];
   computeangular(gyr, angular);
@@ -103,7 +104,7 @@ void setup()
   //led.init();   //no need
 
   Serial.begin(115200);   //serialusb(gpio19,20)
-  Serial0.begin(115200);  //uart0(gpio43,44)
+  //Serial0.begin(115200);  //uart0(gpio43,44)
 
   wifi_init();
 
