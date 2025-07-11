@@ -64,6 +64,9 @@ difference(){
     translate([-10, 10, 0])cylinder(h=99,r=1.6,center=true,$fn=50);
     translate([ 10,-10, 0])cylinder(h=99,r=1.6,center=true,$fn=50);
     translate([-10,-10, 0])cylinder(h=99,r=1.6,center=true,$fn=50);
+    //
+    translate([ 0, 10, 0])cylinder(h=99,r=1.0,center=true,$fn=50);
+    translate([ 0,-10, 0])cylinder(h=99,r=1.0,center=true,$fn=50);
 }
 }
 
@@ -91,7 +94,7 @@ difference(){
 }
 }
 
-xx=1;
+xx=4;
 if(xx==0){
 translate([ 10, 10, 0])hat("d");
 translate([-10, 10, 0])hat("c");
@@ -118,3 +121,14 @@ translate([-10, 10, 0])bot();
 translate([ 10,-10, 0])bot();
 translate([-10,-10, 0])bot();
 }
+else if(xx==4){
+    for(y=[-70:20:70]){
+    for(x=[0:20:70]){
+    translate([ x, y, 0])mid();
+    }
+    }
+}
+
+
+
+
