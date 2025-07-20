@@ -21,15 +21,17 @@ BleKeyboard blekbd;
 #define MYKEY_MEDIA_CONSUMER_CONTROL_CONFIGURATION 0x80004000   //{0, 64}; // Media Selection
 #define MYKEY_MEDIA_EMAIL_READER                   0x80008000   //= {0, 128};
 
-const byte ROWS = 4; //four rows
-const byte COLS = 2; //four columns
+const byte ROWS = 8; //four rows
+const byte COLS = 18; //four columns
 static uint32_t keytable[ROWS][COLS] = {
-  {MYKEY_MEDIA_PLAY_PAUSE,  KEY_ESC      },
-  {MYKEY_MEDIA_STOP,        '`'          },
-  {MYKEY_MEDIA_VOLUME_UP,   KEY_TAB      },
-  {MYKEY_MEDIA_VOLUME_DOWN, KEY_CAPS_LOCK}
-  //{HID_KEY_SHIFT_LEFT}
-  //{HID_KEY_CONTROL_LEFT}
+  {MYKEY_MEDIA_PLAY_PAUSE,  KEY_ESC        },
+  {MYKEY_MEDIA_STOP,        '`'            },
+  {MYKEY_MEDIA_PLAY_PAUSE,  KEY_ESC        },
+  {MYKEY_MEDIA_STOP,        '`'            },
+  {MYKEY_MEDIA_VOLUME_UP,   KEY_TAB        },
+  {MYKEY_MEDIA_VOLUME_DOWN, KEY_CAPS_LOCK  },
+  {MYKEY_MEDIA_PLAY_PAUSE,  KEY_LEFT_SHIFT },
+  {MYKEY_MEDIA_STOP,        KEY_LEFT_CTRL  }
 };
 
 
@@ -40,6 +42,7 @@ void blekbd_init()
 
 void blekbd_press(int x, int y)
 {
+  if(y>1)return;
   if(!blekbd.isConnected())return;
 
   if(keytable[y][x] <= 0xffff){
@@ -55,6 +58,7 @@ void blekbd_press(int x, int y)
 
 void blekbd_release(int x, int y)
 {
+  if(y>1)return;
   if(!blekbd.isConnected())return;
 
   if(keytable[y][x] <= 0xffff){

@@ -1,4 +1,4 @@
-(footprint "seat"
+(footprint "seat_b"
 	(version 20241229)
 	(generator "pcbnew")
 	(generator_version "9.0")
@@ -16,7 +16,7 @@
 			)
 		)
 	)
-	(property "Value" "seat"
+	(property "Value" "seat_b"
 		(at 0 7.874 0)
 		(layer "F.Fab")
 		(uuid "4e0dd573-75e1-4400-8bc1-f0d8c742fcbe")
@@ -144,6 +144,17 @@
 		)
 		(layer "Dwgs.User")
 		(uuid "707f604a-7f3f-405f-8b89-2e17dbf94ec1")
+	)
+	(fp_rect
+		(start -1.6 4)
+		(end 1.6 7)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(fill no)
+		(layer "Edge.Cuts")
+		(uuid "ee2f8914-472a-46b5-9e0e-f5c4570aa89a")
 	)
 	(fp_line
 		(start -9.4 -7)
@@ -291,6 +302,14 @@
 		(remove_unused_layers no)
 		(uuid "cb98755d-dbfe-4cf7-964b-c97694ab182a")
 	)
+	(pad "3" smd roundrect
+		(at -3 6.3)
+		(size 2.8 0.8)
+		(layers "B.Cu" "B.Mask" "B.Paste")
+		(roundrect_rratio 0.15)
+		(thermal_bridge_angle 45)
+		(uuid "4a0121d3-7ada-4ba0-be8e-7f9c0cd77318")
+	)
 	(pad "3" thru_hole circle
 		(at 8.75 6.25)
 		(size 1.7 1.7)
@@ -306,6 +325,14 @@
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
 		(uuid "01ef0843-954d-4c0a-a4b5-7bc918598017")
+	)
+	(pad "4" smd roundrect
+		(at 3 4.7)
+		(size 2.8 0.8)
+		(layers "B.Cu" "B.Mask" "B.Paste")
+		(roundrect_rratio 0.15)
+		(thermal_bridge_angle 45)
+		(uuid "5c4cb992-80e6-4b33-bcf9-1ffda35449ab")
 	)
 	(pad "4" thru_hole circle
 		(at 8.75 3.75)
@@ -339,6 +366,14 @@
 		(remove_unused_layers no)
 		(uuid "fa1160f9-ed0c-4d5f-8c00-fa8e9b8f9a99")
 	)
+	(pad "5" smd roundrect
+		(at -3 4.7)
+		(size 2.8 0.8)
+		(layers "B.Cu" "B.Mask" "B.Paste")
+		(roundrect_rratio 0.15)
+		(thermal_bridge_angle 45)
+		(uuid "c538793d-48b9-4c5c-8af2-c7e0fee3fdf8")
+	)
 	(pad "5" thru_hole circle
 		(at 8.75 -6.25)
 		(size 1.7 1.7)
@@ -362,6 +397,16 @@
 		(layers "*.Cu" "*.Mask")
 		(remove_unused_layers no)
 		(uuid "23f7b86d-d663-4536-baeb-ca34803df837")
+	)
+	(pad "6" smd roundrect
+		(at 3 6.3)
+		(size 2.8 0.8)
+		(layers "B.Cu" "B.Mask" "B.Paste")
+		(roundrect_rratio 0.15)
+		(chamfer_ratio 0.3)
+		(chamfer bottom_right)
+		(thermal_bridge_angle 45)
+		(uuid "b2c4068a-39f8-4664-9d75-e8344f1504ed")
 	)
 	(pad "6" thru_hole circle
 		(at 8.75 -8.75)
