@@ -1,0 +1,6 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "seat_ltor")(type "KiCad")(uri "${KIPRJMOD}/../mykbd.pretty/seat_ltor.kicad_mod")(options "")(descr ""))
+  (lib (name "seat_rtol")(type "KiCad")(uri "${KIPRJMOD}/../mykbd.pretty/seat_rtol.kicad_mod")(options "")(descr ""))
+  (lib (name "mykbd")(type "KiCad")(uri "/Users/ifbe/Desktop/code/ifbe/projwhole/input/keyboard/kicad/mykbd.pretty")(options "")(descr ""))
+)

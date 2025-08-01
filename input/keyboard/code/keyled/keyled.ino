@@ -1,6 +1,12 @@
 #include "ledkbd.h"
 
+#include "config.h"
+
 #include "blekbd.h"
+
+#include "wifikbd.h"
+
+#include "udpkbd.h"
 
 #include "USB.h"
 #include "usbkbd.h"
@@ -8,13 +14,19 @@ USBCDC USBSerial;
 extern USBHIDKeyboard usbkbd;
 
 
+static byte rowPins[ROWS] = {
+PIN_Y0, PIN_Y1, PIN_Y2, PIN_Y3,
+PIN_Y4, PIN_Y5, PIN_Y6, PIN_Y7
+};
+static byte colPins[COLS] = {
+PIN_XN2, PIN_XN1,
+PIN_X0, PIN_X1, PIN_X2, PIN_X3,
+PIN_X4, PIN_X5, PIN_X6, PIN_X7,
+PIN_X8, PIN_X9, PIN_X10,PIN_X11,
+PIN_X12,PIN_X13, PIN_X14, PIN_X15
+};
 
 
-int cycle = 0;
-const byte ROWS = 8; //four rows
-const byte COLS = 2; //four columns
-static byte rowPins[ROWS] = {4, 5, 6, 7, 15, 16, 17, 18}; //connect to the row pinouts of the keypad
-static byte colPins[COLS] = {2, 1};
 struct _state{
   byte val;
   byte old;
@@ -22,6 +34,7 @@ struct _state{
   byte changed;
 };
 struct _state state[ROWS][COLS];
+int cycle = 0;
 
 
 
@@ -31,6 +44,7 @@ struct _state state[ROWS][COLS];
 #define TIMER_FREQ 1000000
 #define TIMER_SETVAL 5000
 hw_timer_t* timer = 0;
+int global_changed = 0;
 void IRAM_ATTR ontimer(void* ptr)
 {
   //read
@@ -44,15 +58,15 @@ void IRAM_ATTR ontimer(void* ptr)
     else{
       state[cycle][j].cnt = 1;
       state[cycle][j].changed = 1;
+      global_changed = 1;
+      /*
       if(state[cycle][j].val == HIGH){
-        //xxx = cycle*COLS + j;
         USBSerial.printf("%d,%d: %d->%d\n", cycle, j, state[cycle][j].old, state[cycle][j].val);
-        //usbkbd.pressRaw(HID_KEY_A);
       }
       else{
         USBSerial.printf("%d,%d: %d->%d\n", cycle, j, state[cycle][j].old, state[cycle][j].val);
-        //usbkbd.releaseRaw(HID_KEY_A);
       }
+      */
     }
   }
 
@@ -65,12 +79,67 @@ void IRAM_ATTR ontimer(void* ptr)
 }
 
 
+void check_keyboard()
+{
+  if(0 == global_changed)return;
+
+  for(int y=0;y<ROWS;y++){
+    for(int x=0;x<COLS;x++){
+      if(0 == state[y][x].changed)continue;
+      state[y][x].changed = 0;
+
+      if(state[y][x].val == 1){
+        USBSerial.printf("press: %d %d\n", x, y);
+
+        ws2812b_press(x, y);
+
+        usbkbd_press(x, y);
+
+        blekbd_press(x, y);
+
+        wifi_udp_send(x, y);
+      }
+      else{
+        USBSerial.printf("release: %d %d\n", x, y);
+
+        ws2812b_release(x, y);
+
+        usbkbd_release(x, y);
+
+        blekbd_release(x, y);
+      }
+    }
+  }
+
+  global_changed = 0;
+}
+
+
+void loop()
+{
+  //USBSerial.println(999);
+  //setled();
+
+  while(USBSerial.available() > 0) {
+    String incomingMessage = USBSerial.readStringUntil('\n');
+    USBSerial.println(incomingMessage.c_str());
+  }
+
+  wifi_poll();
+
+  //ws2812b_clear();
+
+  check_keyboard();
+
+  //ws2812b_show();
+}
 
 
 void setup()
 {
   //ws2812b
   initled();
+  ws2812b_clear();
 
   //cdc+hid
   USBSerial.begin(115200);
@@ -79,6 +148,9 @@ void setup()
 
   //bt
   blekbd_init();
+
+  //wifi
+  wifi_init();
 
   //col input
   for(int j=0;j<COLS;j++){
@@ -99,39 +171,4 @@ void setup()
   timer = timerBegin(TIMER_FREQ);   //freq=1000000
   timerAlarm(timer, TIMER_SETVAL, true, 0);   //timer, 5ms, isreload, reloadvalue
   timerAttachInterruptArg(timer, ontimer, 0);  //timer, func, arg
-}
-
-void loop()
-{
-  //USBSerial.println(999);
-  //setled();
-
-  for(int y=0;y<ROWS;y++){
-    for(int x=0;x<COLS;x++){
-      if(0 == state[y][x].changed)continue;
-      state[y][x].changed = 0;
-
-      if(state[y][x].val == 1){
-        USBSerial.printf("press: %d %d\n", x, y);
-
-        //setpixel(x, y);
-
-        usbkbd_press(x, y);
-
-        blekbd_press(x, y);
-      }
-      else{
-        USBSerial.printf("released: %d %d\n", x, y);
-
-        usbkbd_release(x, y);
-
-        blekbd_release(x, y);
-      }
-    }
-  }
-
-  while(USBSerial.available() > 0) {
-    String incomingMessage = USBSerial.readStringUntil('\n');
-    USBSerial.println(incomingMessage.c_str());
-  }
 }

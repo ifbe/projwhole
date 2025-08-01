@@ -50,7 +50,7 @@ module hat_xy(xsize, ysize, mystr){
     }
 }
 
-module mid(){
+module top(){
 difference(){
     cube([20,20,2],center=true);
     cube([14,14,99],center=true);
@@ -60,10 +60,10 @@ difference(){
     translate([0, -10, 1-0.2/2])cube([20,0.2,0.2],center=true);
     translate([0,  10, 1-0.2/2])cube([20,0.2,0.2],center=true);
     //
-    translate([ 10, 10, 0])cylinder(h=99,r=1.6,center=true,$fn=50);
-    translate([-10, 10, 0])cylinder(h=99,r=1.6,center=true,$fn=50);
-    translate([ 10,-10, 0])cylinder(h=99,r=1.6,center=true,$fn=50);
-    translate([-10,-10, 0])cylinder(h=99,r=1.6,center=true,$fn=50);
+    translate([ 10, 10, 0])cylinder(h=99,r=1.2,center=true,$fn=50);
+    translate([-10, 10, 0])cylinder(h=99,r=1.2,center=true,$fn=50);
+    translate([ 10,-10, 0])cylinder(h=99,r=1.2,center=true,$fn=50);
+    translate([-10,-10, 0])cylinder(h=99,r=1.2,center=true,$fn=50);
     //
     translate([ 0, 10, 0])cylinder(h=99,r=1.0,center=true,$fn=50);
     translate([ 0,-10, 0])cylinder(h=99,r=1.0,center=true,$fn=50);
@@ -142,16 +142,115 @@ module bb(){
 }
 
 
+module connect()
+{
+    difference(){
+        cube([2.5, 2.5, 8]);
+        translate([1.25, 1.25, 4])cylinder(h=99, r=0.6, center=true, $fn=10);
+    }
+}
+module connectall()
+{
+    translate([-10+1.25, 2.5, 3])cube([2.5, 5, 2],center=true);
+    translate([ 10-1.25, 2.5, 3])cube([2.5, 5, 2],center=true);
+    difference(){
+        union(){
+        //right
+        translate([  0, 10, 0])connect();
+        translate([2.5, 10, 0])connect();
+        translate([2.5, 7.5, 0])connect();
+        translate([2.5, 5, 0])connect();
+        translate([2.5, 2.5, 0])connect();
+        translate([  5, 2.5, 0])connect();
+        translate([  5, 0, 0])connect();
+        translate([  5, -2.5, 0])connect();
+        translate([  5, -5, 0])connect();
+        translate([2.5, -5, 0])connect();
+        translate([2.5, -7.5, 0])connect();
+        translate([  0, -7.5, 0])connect();
+        //left
+        translate([-2.5, 10, 0])connect();
+        translate([  -5, 10, 0])connect();
+        translate([-5, 7.5, 0])connect();
+        translate([-5, 5, 0])connect();
+        translate([-5, 2.5, 0])connect();
+        translate([  -7.5, 2.5, 0])connect();
+        translate([  -7.5, 0, 0])connect();
+        translate([  -7.5, -2.5, 0])connect();
+        translate([  -7.5, -5, 0])connect();
+        translate([-5, -5, 0])connect();
+        translate([-5, -7.5, 0])connect();
+        translate([-2.5, -7.5, 0])connect();
+        }
+        //top
+        translate([0, 12.5, 6])cube([15.01, 5.01, 4.01],center=true);
+        translate([0, 12.5, 1.2])cube([15.01, 7.51, 2.41],center=true);
+        //mid
+        cube([10.8, 5.6, 99],center=true);
+        translate([0, 2.5, 0])cube([5.6, 15.6, 99],center=true);
+        //bot
+        translate([0, -2.5, 6])cube([15.01, 10.01, 4.01],center=true);
+        translate([0, -7.5, 1.2])cube([15.01, 10.01, 2.41],center=true);
+        //left
+        translate([-5-1.25, 2.5, 6])cube([2.51, 15.2, 4.01],center=true);
+        //right
+        translate([ 5+1.25, 2.5+1.25, 6])cube([2.51, 2.51, 4.01],center=true);
+    }
+}
+module kkkkk(){
+    difference(){
+        translate([0,0,2])cube([20, 20, 4], center=true);
+        //
+        cube([15, 15, 99], center=true);
+        //
+        translate([ 10, 10, 0])cylinder(h=99,r=1.2,center=true,$fn=50);
+        //translate([ 10-1.25, 10-1.25, 3])cylinder(h=2.01,r=.6,center=true,$fn=50);
+        //
+        translate([-10, 10, 0])cylinder(h=99,r=1.2,center=true,$fn=50);
+        //translate([-10+1.25, 10-1.25, 3])cylinder(h=2.01,r=.6,center=true,$fn=50);
+        //
+        translate([ 10,-10, 0])cylinder(h=99,r=1.2,center=true,$fn=50);
+        //translate([ 10-1.25,-10+1.25, 3])cylinder(h=2.01,r=.6,center=true,$fn=50);
+        //
+        translate([-10,-10, 0])cylinder(h=99,r=1.2,center=true,$fn=50);
+        //translate([-10+1.25,-10+1.25, 3])cylinder(h=2.01,r=.6,center=true,$fn=50);
+        
+
+        //top left
+        translate([-10+1.25*3, 10-1.25, 3.21])cylinder(h=1.6,r=1,center=true,$fn=10);
+        translate([-10+1.25,   10-1.25, 3.21])cylinder(h=1.6,r=1,center=true,$fn=10);
+        translate([-10+1.25,   10-1.25*3, 3.21])cylinder(h=1.6,r=1,center=true,$fn=10);
+
+        //top right
+        translate([ 10-1.25*3, 10-1.25, 3.21])cylinder(h=1.6,r=1,center=true,$fn=10);
+        translate([ 10-1.25,   10-1.25, 3.21])cylinder(h=1.6,r=1,center=true,$fn=10);
+        translate([ 10-1.25,   10-1.25*3, 3.21])cylinder(h=1.6,r=1,center=true,$fn=10);
+
+        //bot left
+        translate([-10+1.25,-10+1.25*7, 3.21])cylinder(h=1.6,r=1,center=true,$fn=10);
+        translate([-10+1.25,-10+1.25*5, 3.21])cylinder(h=1.6,r=1,center=true,$fn=10);
+        translate([-10+1.25,-10+1.25*3, 3.21])cylinder(h=1.6,r=1,center=true,$fn=10);
+        translate([-10+1.25,-10+1.25*1, 3.21])cylinder(h=1.6,r=1,center=true,$fn=10);
+        translate([-10+1.25*3,-10+1.25, 3.21])cylinder(h=1.6,r=1,center=true,$fn=10);
+       
+        //bot right
+        translate([10-1.25,-10+1.25*7, 3.21])cylinder(h=1.6,r=1,center=true,$fn=10);
+        translate([10-1.25,-10+1.25*5, 3.21])cylinder(h=1.6,r=1,center=true,$fn=10);
+        translate([10-1.25,-10+1.25*3, 3.21])cylinder(h=1.6,r=1,center=true,$fn=10);
+        translate([10-1.25,-10+1.25*1, 3.21])cylinder(h=1.6,r=1,center=true,$fn=10);
+        translate([10-1.25*3,-10+1.25, 3.21])cylinder(h=1.6,r=1,center=true,$fn=10);
+    }
+}
 
 
-xx=5;
+xx=9;
 if(xx==0){
 translate([ 10, 10, 0])hat("d");
 translate([-10, 10, 0])hat("c");
 translate([ 10,-10, 0])hat("b");
 translate([-10,-10, 0])hat("a");
 }
-if(xx==1){
+else if(xx==1){
 translate([ 0,100, 0])hat_xy(2, 1, "esc");
 translate([ 0, 80, 0])hat_xy(2, 1, "~");
 translate([ 0, 60, 0])hat_xy(2, 1, "tab");
@@ -160,10 +259,10 @@ translate([ 0, 20, 0])hat_xy(2, 1, "shift");
 translate([ 0,  0, 0])hat_xy(2, 1, "ctrl");
 }
 else if(xx==2){
-translate([ 10, 10, 0])mid();
-translate([-10, 10, 0])mid();
-translate([ 10,-10, 0])mid();
-translate([-10,-10, 0])mid();
+translate([ 10, 10, 0])top();
+translate([-10, 10, 0])top();
+translate([ 10,-10, 0])top();
+translate([-10,-10, 0])top();
 }
 else if(xx==3){
 translate([ 10, 10, 0])bot();
@@ -172,9 +271,9 @@ translate([ 10,-10, 0])bot();
 translate([-10,-10, 0])bot();
 }
 else if(xx==4){
-    for(y=[-70:20:70]){
+    for(y=[0:20:70]){
     for(x=[0:20:70]){
-    translate([ x, y, 0])mid();
+    translate([10+x, 10+y, 0])top();
     }
     }
 }
@@ -188,6 +287,20 @@ else if(xx==5){
 else if(xx==6){
     bb();
 }
-
-
-
+else if(xx==7){
+    for(y=[-20:20:20]){
+    for(x=[-20:20:20]){
+        translate([x,y,0])connectall();
+    }
+    }
+}
+else if(xx==8){
+    kkkkk();
+}
+else if(xx==9){
+    for(y=[0:20:150]){
+    for(x=[0:20:70]){
+        translate([10+x,10+y,0])kkkkk();
+    }
+    }
+}

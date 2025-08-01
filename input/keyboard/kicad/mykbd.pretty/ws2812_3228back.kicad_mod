@@ -1,0 +1,116 @@
+(footprint "ws2812_3228back"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(descr "Cherry MX keyswitch, 1.00u, PCB mount, http://cherryamericas.com/wp-content/uploads/2014/12/mx_cat.pdf")
+	(tags "Cherry MX keyswitch 1.00u PCB")
+	(property "Reference" "REF**"
+		(at 0 -7.874 0)
+		(layer "F.SilkS")
+		(hide yes)
+		(uuid "d1877026-5e99-4ba6-b4a1-cd29ffe776a3")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "ws2812_3228back"
+		(at 0 7.874 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "4e0dd573-75e1-4400-8bc1-f0d8c742fcbe")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 2.54 -5.08 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "7f1f9148-afda-4e2d-be77-ae41ee65afcb")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 2.54 -5.08 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "35066d05-a6ba-4494-8171-256266ec8ffc")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr through_hole)
+	(fp_rect
+		(start -1.6 -1.5)
+		(end 1.6 1.5)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(fill no)
+		(layer "Edge.Cuts")
+		(uuid "ee2f8914-472a-46b5-9e0e-f5c4570aa89a")
+	)
+	(pad "1" smd roundrect
+		(at -2.3 -0.8)
+		(size 1.4 0.8)
+		(layers "B.Cu" "B.Mask" "B.Paste")
+		(roundrect_rratio 0.15)
+		(thermal_bridge_angle 45)
+		(uuid "c538793d-48b9-4c5c-8af2-c7e0fee3fdf8")
+	)
+	(pad "2" smd roundrect
+		(at -2.3 0.8)
+		(size 1.4 0.8)
+		(layers "B.Cu" "B.Mask" "B.Paste")
+		(roundrect_rratio 0.15)
+		(thermal_bridge_angle 45)
+		(uuid "4a0121d3-7ada-4ba0-be8e-7f9c0cd77318")
+	)
+	(pad "3" smd roundrect
+		(at 2.3 0.8)
+		(size 1.4 0.8)
+		(layers "B.Cu" "B.Mask" "B.Paste")
+		(roundrect_rratio 0.15)
+		(chamfer_ratio 0.3)
+		(chamfer bottom_right)
+		(thermal_bridge_angle 45)
+		(uuid "b2c4068a-39f8-4664-9d75-e8344f1504ed")
+	)
+	(pad "4" smd roundrect
+		(at 2.3 -0.8)
+		(size 1.4 0.8)
+		(layers "B.Cu" "B.Mask" "B.Paste")
+		(roundrect_rratio 0.15)
+		(thermal_bridge_angle 45)
+		(uuid "5c4cb992-80e6-4b33-bcf9-1ffda35449ab")
+	)
+	(embedded_fonts no)
+	(model "${KICAD9_3DMODEL_DIR}/Button_Switch_Keyboard.3dshapes/SW_Cherry_MX_1.00u_PCB.wrl"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)

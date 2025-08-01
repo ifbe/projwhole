@@ -1,3 +1,4 @@
+#include "config.h"
 
 //https://github.com/T-vK/ESP32-BLE-Keyboard
 #include <BleKeyboard.h>
@@ -21,9 +22,9 @@ BleKeyboard blekbd;
 #define MYKEY_MEDIA_CONSUMER_CONTROL_CONFIGURATION 0x80004000   //{0, 64}; // Media Selection
 #define MYKEY_MEDIA_EMAIL_READER                   0x80008000   //= {0, 128};
 
-const byte ROWS = 8; //four rows
-const byte COLS = 18; //four columns
-static uint32_t keytable[ROWS][COLS] = {
+
+
+static uint32_t keytable_8x18[ROWS][COLS] = {
   {MYKEY_MEDIA_PLAY_PAUSE,  KEY_ESC        },
   {MYKEY_MEDIA_STOP,        '`'            },
   {MYKEY_MEDIA_PLAY_PAUSE,  KEY_ESC        },
@@ -34,38 +35,78 @@ static uint32_t keytable[ROWS][COLS] = {
   {MYKEY_MEDIA_STOP,        KEY_LEFT_CTRL  }
 };
 
+static byte keytable_arrow[4][4] = {
+  {             0,               0, KEY_PAGE_UP, KEY_END      },
+  {             0,               0, KEY_HOME   , KEY_PAGE_DOWN},
+  {KEY_UP_ARROW  , KEY_RIGHT_ARROW,           0,             0},
+  {KEY_LEFT_ARROW, KEY_DOWN_ARROW ,           0,             0}
+};
+
+
+
 
 void blekbd_init()
 {
   blekbd.begin();
 }
+void blekbd_exit()
+{
+}
+
+
+
+
+void blekbd_press_u32(uint32_t val){
+  if(val <= 0xffff){
+    blekbd.press(val);
+  }
+  else{
+    uint8_t* ptr = (uint8_t*)&val;
+    blekbd.press(ptr);
+  }
+}
 
 void blekbd_press(int x, int y)
 {
-  if(y>1)return;
+  //if(y>1)return;
   if(!blekbd.isConnected())return;
 
-  if(keytable[y][x] <= 0xffff){
-    blekbd.press(keytable[y][x]);
+  if(mode_chosen == mode_arrow){
+    if( (x>=0) && (x<=3) && (y>=0) && (y<=3) ){
+      blekbd_press_u32(keytable_arrow[y][x]);
+    }
   }
-  else{
-    uint8_t* ptr = (uint8_t*)&keytable[y][x];
-    blekbd.press(ptr);
+  else if(mode_chosen == mode_8x18){
+    blekbd_press_u32(keytable_8x18[y][x]);
   }
   //blekbd.write('a');
   //blekbd.print("haha");
 }
 
-void blekbd_release(int x, int y)
-{
-  if(y>1)return;
-  if(!blekbd.isConnected())return;
 
-  if(keytable[y][x] <= 0xffff){
-    blekbd.release(keytable[y][x]);
+
+
+void blekbd_release_u32(uint32_t val){
+  if(val <= 0xffff){
+    blekbd.release(val);
   }
   else{
-    uint8_t* ptr = (uint8_t*)&keytable[y][x];
+    uint8_t* ptr = (uint8_t*)&val;
     blekbd.release(ptr);
+  }
+}
+
+void blekbd_release(int x, int y)
+{
+  //if(y>1)return;
+  if(!blekbd.isConnected())return;
+
+  if(mode_chosen == mode_arrow){
+    if( (x>=0) && (x<=3) && (y>=0) && (y<=3) ){
+      blekbd_release_u32(keytable_arrow[y][x]);
+    }
+  }
+  else if(mode_chosen == mode_8x18){
+    blekbd_release_u32(keytable_8x18[y][x]);
   }
 }

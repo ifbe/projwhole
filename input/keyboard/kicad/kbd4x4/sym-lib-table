@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "mykbd")(type "KiCad")(uri "/Users/ifbe/Desktop/code/ifbe/projwhole/input/keyboard/kicad/kbd4x4/../mykbd.kicad_sym")(options "")(descr ""))
+)

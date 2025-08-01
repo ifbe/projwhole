@@ -1,0 +1,143 @@
+(kicad_sch
+	(version 20250114)
+	(generator "eeschema")
+	(generator_version "9.0")
+	(uuid "0f3a72f9-06bf-4bb7-ae24-2b8b4d5febdb")
+	(paper "A4")
+	(lib_symbols)
+	(sheet
+		(at 27.94 72.39)
+		(size 69.85 71.12)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+			(color 132 0 132 1)
+		)
+		(fill
+			(color 255 255 255 0.0000)
+		)
+		(uuid "3252a91b-784a-44e0-9a8b-b4bdb55a75e0")
+		(property "Sheetname" "left"
+			(at 27.94 71.6784 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "part_left.kicad_sch"
+			(at 27.94 144.0946 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "cm4"
+				(path "/0f3a72f9-06bf-4bb7-ae24-2b8b4d5febdb"
+					(page "2")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 203.2 73.66)
+		(size 68.58 69.85)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+			(color 132 0 132 1)
+		)
+		(fill
+			(color 255 255 255 0.0000)
+		)
+		(uuid "3d84b60e-3d61-455a-8212-3b2c3a167f74")
+		(property "Sheetname" "right"
+			(at 203.2 72.9484 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "part_right.kicad_sch"
+			(at 203.2 144.0946 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "cm4"
+				(path "/0f3a72f9-06bf-4bb7-ae24-2b8b4d5febdb"
+					(page "3")
+				)
+			)
+		)
+	)
+	(sheet
+		(at 121.92 72.39)
+		(size 63.5 71.12)
+		(exclude_from_sim no)
+		(in_bom yes)
+		(on_board yes)
+		(dnp no)
+		(fields_autoplaced yes)
+		(stroke
+			(width 0.1524)
+			(type solid)
+			(color 132 0 132 1)
+		)
+		(fill
+			(color 255 255 255 0.0000)
+		)
+		(uuid "6d600fc2-9291-4fa1-bcce-53b0a1fea51d")
+		(property "Sheetname" "core"
+			(at 121.92 71.6784 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left bottom)
+			)
+		)
+		(property "Sheetfile" "part_core.kicad_sch"
+			(at 121.92 144.0946 0)
+			(effects
+				(font
+					(size 1.27 1.27)
+				)
+				(justify left top)
+			)
+		)
+		(instances
+			(project "cm4"
+				(path "/0f3a72f9-06bf-4bb7-ae24-2b8b4d5febdb"
+					(page "4")
+				)
+			)
+		)
+	)
+	(sheet_instances
+		(path "/"
+			(page "1")
+		)
+	)
+	(embedded_fonts no)
+)

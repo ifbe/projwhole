@@ -1,0 +1,4 @@
+(fp_lib_table
+  (version 7)
+  (lib (name "mykbd")(type "KiCad")(uri "/Users/ifbe/Desktop/code/ifbe/projwhole/input/keyboard/kicad/mykbd.pretty")(options "")(descr ""))
+)

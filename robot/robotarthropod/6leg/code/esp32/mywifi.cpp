@@ -56,7 +56,7 @@ void loadCredentials(String& sta_ssid, String& sta_pass) {
 
 
 
-
+#include "myudp.h"
 //wifi
 #include <WiFi.h>
 //#include <NetworkUdp.h>
@@ -414,7 +414,7 @@ void WiFiEvent(WiFiEvent_t event, arduino_event_info_t info) {
     break;
   case ARDUINO_EVENT_WIFI_STA_GOT_IP:
     Serial.printf("ARDUINO_EVENT_WIFI_STA_GOT_IP: %s\n", WiFi.localIP().toString());
-    //wifi_udp_init();
+    wifi_udp_init();
     sta_connected = true;
     break;
   case ARDUINO_EVENT_WIFI_STA_GOT_IP6:
@@ -453,7 +453,7 @@ void WiFiEvent(WiFiEvent_t event, arduino_event_info_t info) {
 void wifi_init()
 {
   //load
-  loadCredentials(sta_ssid, sta_pass);
+  if(sta_ssid.equals(""))loadCredentials(sta_ssid, sta_pass);
   Serial.printf("ap: ssid=%s, pass=%s\n", ap_ssid, ap_pass);
   Serial.printf("sta: ssid=%s, pass=%s\n", sta_ssid.c_str(), sta_pass.c_str());
 
@@ -476,7 +476,7 @@ void wifi_init()
 void wifi_poll()
 {
   server.handleClient();
-  //wifi_udp_poll();
+  wifi_udp_poll();
 
   pinMode(PIN_VOLT1, INPUT);
   pinMode(PIN_VOLT2, INPUT);
