@@ -151,7 +151,7 @@
 			)
 		)
 		(symbol "mykbd_1_1"
-			(text "a"
+			(text "i"
 				(at -4.572 -2.286 0)
 				(effects
 					(font
@@ -159,7 +159,7 @@
 					)
 				)
 			)
-			(text "b"
+			(text "o"
 				(at -2.032 -2.032 0)
 				(effects
 					(font

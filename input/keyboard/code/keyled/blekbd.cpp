@@ -24,7 +24,15 @@ BleKeyboard blekbd;
 
 
 
-static uint32_t keytable_8x18[ROWS][COLS] = {
+#if mode_chosen==mode_arrow
+static byte keytable[ROWS][COLS] = {
+  {             0,               0, KEY_PAGE_UP, KEY_END      },
+  {             0,               0, KEY_HOME   , KEY_PAGE_DOWN},
+  {KEY_UP_ARROW  , KEY_RIGHT_ARROW,           0,             0},
+  {KEY_LEFT_ARROW, KEY_DOWN_ARROW ,           0,             0}
+};
+#else
+static uint32_t keytable[ROWS][COLS] = {
   {MYKEY_MEDIA_PLAY_PAUSE,  KEY_ESC        },
   {MYKEY_MEDIA_STOP,        '`'            },
   {MYKEY_MEDIA_PLAY_PAUSE,  KEY_ESC        },
@@ -34,14 +42,7 @@ static uint32_t keytable_8x18[ROWS][COLS] = {
   {MYKEY_MEDIA_PLAY_PAUSE,  KEY_LEFT_SHIFT },
   {MYKEY_MEDIA_STOP,        KEY_LEFT_CTRL  }
 };
-
-static byte keytable_arrow[4][4] = {
-  {             0,               0, KEY_PAGE_UP, KEY_END      },
-  {             0,               0, KEY_HOME   , KEY_PAGE_DOWN},
-  {KEY_UP_ARROW  , KEY_RIGHT_ARROW,           0,             0},
-  {KEY_LEFT_ARROW, KEY_DOWN_ARROW ,           0,             0}
-};
-
+#endif
 
 
 
@@ -72,13 +73,10 @@ void blekbd_press(int x, int y)
   if(!blekbd.isConnected())return;
 
   if(mode_chosen == mode_arrow){
-    if( (x>=0) && (x<=3) && (y>=0) && (y<=3) ){
-      blekbd_press_u32(keytable_arrow[y][x]);
-    }
+    if( (x<0) || (x>=4) )return;
+    if( (y<0) || (y>=4) )return;
   }
-  else if(mode_chosen == mode_8x18){
-    blekbd_press_u32(keytable_8x18[y][x]);
-  }
+  blekbd_press_u32(keytable[y][x]);
   //blekbd.write('a');
   //blekbd.print("haha");
 }
@@ -102,11 +100,8 @@ void blekbd_release(int x, int y)
   if(!blekbd.isConnected())return;
 
   if(mode_chosen == mode_arrow){
-    if( (x>=0) && (x<=3) && (y>=0) && (y<=3) ){
-      blekbd_release_u32(keytable_arrow[y][x]);
-    }
+    if( (x<0) || (x>=4) )return;
+    if( (y<0) || (y>=4) )return;
   }
-  else if(mode_chosen == mode_8x18){
-    blekbd_release_u32(keytable_8x18[y][x]);
-  }
+  blekbd_release_u32(keytable[y][x]);
 }

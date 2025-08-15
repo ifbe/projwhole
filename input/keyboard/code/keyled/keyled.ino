@@ -14,9 +14,13 @@ USBCDC USBSerial;
 extern USBHIDKeyboard usbkbd;
 
 
+#if mode_chosen==mode_arrow
+static byte rowPins[ROWS] = {PIN_KEY_Y0, PIN_KEY_Y1, PIN_KEY_Y2, PIN_KEY_Y3};
+static byte colPins[COLS] = {PIN_XN2, PIN_XN1, PIN_X0, PIN_X1};
+#else
 static byte rowPins[ROWS] = {
-PIN_Y0, PIN_Y1, PIN_Y2, PIN_Y3,
-PIN_Y4, PIN_Y5, PIN_Y6, PIN_Y7
+PIN_KEY_Y0, PIN_KEY_Y1, PIN_KEY_Y2, PIN_KEY_Y3,
+PIN_KEY_Y4, PIN_KEY_Y5, PIN_KEY_Y6, PIN_KEY_Y7
 };
 static byte colPins[COLS] = {
 PIN_XN2, PIN_XN1,
@@ -25,6 +29,7 @@ PIN_X4, PIN_X5, PIN_X6, PIN_X7,
 PIN_X8, PIN_X9, PIN_X10,PIN_X11,
 PIN_X12,PIN_X13, PIN_X14, PIN_X15
 };
+#endif
 
 
 struct _state{
@@ -139,7 +144,7 @@ void setup()
 {
   //ws2812b
   initled();
-  ws2812b_clear();
+  //ws2812b_clear();
 
   //cdc+hid
   USBSerial.begin(115200);
