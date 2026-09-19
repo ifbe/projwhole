@@ -1,8 +1,13 @@
 
 #define mode_arrow 0
 #define mode_8x18 1
-#define mode_8x18_abcdef 1
-#define mode_chosen mode_arrow
+#define mode_chosen mode_8x18
+
+// 8x18 模式下 currmode 的含义（arrow 模式只有一个键表，不用这些）
+#define kbdmode_normal 0      // 常规键位
+#define kbdmode_abcdef 1
+#define kbdmode_ascii 2
+#define kbdmode_periodic 3    // 元素周期表（字符串表在 mod_usb.cpp / mod_ble.cpp 里）
 
 #if mode_chosen==mode_arrow
   #define ROWS 4
@@ -10,6 +15,22 @@
 #else
   #define ROWS 8
   #define COLS 18
+#endif
+
+// 模式键（右下角 4 个）暂时取消：现在只能在网页里切模式（/kbdstat 的 set mode 按钮）。
+// 几何宏先留着，以后想恢复把 kbd_is_modekey 改回下面注释那行即可。
+#define KBD_MODEKEY_COUNT 4
+#define KBD_MODEKEY_ROW   (ROWS-1)
+#define KBD_MODEKEY_COL0  (COLS-KBD_MODEKEY_COUNT)
+
+//#define kbd_is_modekey(x, y)  ( ((y)==KBD_MODEKEY_ROW) && ((x)>=KBD_MODEKEY_COL0) )
+#define kbd_is_modekey(x, y)  (0)
+
+// 只有 8x18 模式才有元素周期表模式（模式 3）
+#if mode_chosen==mode_8x18
+  #define kbd_periodic_enabled 1
+#else
+  #define kbd_periodic_enabled 0
 #endif
 
 

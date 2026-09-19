@@ -1,10 +1,11 @@
-#include "config.h"
+#include "keyled.h"
 #include <Adafruit_NeoPixel.h>
 Adafruit_NeoPixel* pixels_y0y1 = 0;
 Adafruit_NeoPixel* pixels_y2y3 = 0;
 //Adafruit_NeoPixel* pixels_y4y5 = 0;
 //Adafruit_NeoPixel* pixels_y6y7 = 0;
 
+extern int currmode;
 static uint32_t rgbtable_8x18[ROWS][COLS] = {};
 
 void initled()
@@ -56,16 +57,59 @@ void ws2812b_show()
   //if(pixels_y6y7)pixels_y6y7->show();
 }
 
+uint32_t ws2812b_getpixel(int x, int y)
+{
+  return rgbtable_8x18[y][x];
+}
+
+void ws2812b_setpixel(int x, int y, uint32_t rgb)
+{
+  rgbtable_8x18[y][x] = rgb;
+
+  uint32_t r = (rgb >>16) & 0xff;
+  uint32_t g = (rgb >> 8) & 0xff;
+  uint32_t b = rgb & 0xff;
+
+  int where = (y & 0xfe) * COLS + x;
+  if(y&1)where += 2*COLS-1 - 2*x;
+
+  pixels_y0y1->setPixelColor(where, pixels_y0y1->Color(r, g, b));
+  pixels_y0y1->show();
+}
+
 void ws2812b_press(int x, int y)
 {
   if(0 == pixels_y0y1)return;
 
-  int r=1;
-  int g=1;
-  int b=1;
-
+  uint32_t r=4;
+  uint32_t g=4;
+  uint32_t b=4;
+  switch(currmode){
+  case 0:
+    r=0;
+    g=0;
+    b=1;
+    break;
+  case 1:
+    r=0;
+    g=1;
+    b=0;
+    break;
+  case 2:
+    r=1;
+    g=0;
+    b=0;
+    break;
+  case 3:
+    r=1;
+    g=1;
+    b=0;
+    break;
+  }
+  
   int where = (y & 0xfe) * COLS + x;
   if(y&1)where += 2*COLS-1 - 2*x;
+
   pixels_y0y1->setPixelColor(where, pixels_y0y1->Color(r, g, b));
   pixels_y0y1->show();
 }
@@ -76,6 +120,7 @@ void ws2812b_release(int x, int y)
 
   int where = (y & 0xfe) * COLS + x;
   if(y&1)where += 2*COLS-1 - 2*x;
+
   pixels_y0y1->setPixelColor(where, 0);
   pixels_y0y1->show();
 }

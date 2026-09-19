@@ -1,7 +1,8 @@
-#include "config.h"
+#include "mod_log.h"
+#include "keyled.h"
 #include <Arduino.h>
 #include <NetworkUdp.h>
-#include "kbd_eeprom.h"
+#include "mod_eeprom.h"
 
 
 NetworkUDP udp;
@@ -44,19 +45,19 @@ void wifi_udp_send(int x, int y)
 
 void wifi_udp_init()
 {
-  Serial.println(__FUNCTION__);
+  kbdlog.println(__FUNCTION__);
   udp.begin(udp_self_port);
 
   if(udp_peer_ipv4.equals("") || (0 == udp_peer_port) ){
     udppeer_load(udp_peer_ipv4, udp_peer_port);
   }
-  Serial.printf("udppeer: ipv4=%s, port=%d\n", udp_peer_ipv4.c_str(), udp_peer_port);
+  kbdlog.printf("udppeer: ipv4=%s, port=%d\n", udp_peer_ipv4.c_str(), udp_peer_port);
 }
 void wifi_udp_poll()
 {
   int pktlen = udp.parsePacket();
   if(pktlen <= 0)return;
-//Serial.println(ret);
+//kbdlog.println(ret);
 
   int sz = (pktlen<256) ? pktlen : 256; 
   unsigned char buf[256];
@@ -64,7 +65,7 @@ void wifi_udp_poll()
   if(readlen < 0)return;
 
   if(readlen < pktlen){
-    Serial.printf("(pktlen=%d, uselen=%d, drop remain)\n", pktlen, readlen);
+    kbdlog.printf("(pktlen=%d, uselen=%d, drop remain)\n", pktlen, readlen);
     udp.clear();
   }
 
@@ -76,6 +77,6 @@ void wifi_udp_poll()
 
   IPAddress ip = udp.remoteIP();
   int port = udp.remotePort();
-  Serial.printf("%d.%d.%d.%d@%d: %d/%d %s\n", ip[0], ip[1], ip[2], ip[3], port, readlen, pktlen, str);
+  kbdlog.printf("%d.%d.%d.%d@%d: %d/%d %s\n", ip[0], ip[1], ip[2], ip[3], port, readlen, pktlen, str);
 #endif
 }
