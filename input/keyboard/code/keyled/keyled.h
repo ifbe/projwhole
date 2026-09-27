@@ -36,43 +36,62 @@
 
 #define board_version1 1
 #define board_version2 2
+#define board_version2 3
 #define board_chosen board_version2
 
 #if board_chosen==board_version1
+  #define PIN_LED_Y0 3
+  //#define PIN_LED_Y2 46
+  //#define PIN_LED_Y4 45
+  //#define PIN_LED_Y6 0
+
+  #define PIN_KEY_Y0 4
+  #define PIN_KEY_Y1 5
+  #define PIN_KEY_Y2 6
+  #define PIN_KEY_Y3 7
   #define PIN_KEY_Y4 15
   #define PIN_KEY_Y5 16
   #define PIN_KEY_Y6 17
   #define PIN_KEY_Y7 18
-
-  #define PIN_LED_Y0 3
-  #define PIN_LED_Y2 46
-  #define PIN_LED_Y4 45
-  #define PIN_LED_Y6 0
 #elif board_chosen==board_version2
+  #define PIN_LED_Y0 15
+  //#define PIN_LED_Y2 16
+  //#define PIN_LED_Y4 17
+  //#define PIN_LED_Y6 18
+
+  #define PIN_KEY_Y0 4
+  #define PIN_KEY_Y1 5
+  #define PIN_KEY_Y2 6
+  #define PIN_KEY_Y3 7
   #define PIN_KEY_Y4 3
   #define PIN_KEY_Y5 46
   #define PIN_KEY_Y6 45
   #define PIN_KEY_Y7 0
+#elif board_chosen==board_version3
+  #define PIN_LED_TEST 1
+  #define PIN_LED_Y0 2
 
-  #define PIN_LED_Y0 15
-  #define PIN_LED_Y2 16
-  #define PIN_LED_Y4 17
-  #define PIN_LED_Y6 18
+  #define PIN_I2S_BCLK 4
+  #define PIN_I2S_LRCLK 5
+  #define PIN_I2S_DIN 6
+  #define PIN_I2S_DOUT 7
+
+  #define PIN_KEY_Y0 0    //boot select
+  #define PIN_KEY_Y1 3    //jtag choose
+  #define PIN_KEY_Y2 45   //vdd_spi
+  #define PIN_KEY_Y3 46   //boot log
+  #define PIN_KEY_Y0 15
+  #define PIN_KEY_Y1 16
+  #define PIN_KEY_Y2 17
+  #define PIN_KEY_Y3 18
 #endif
 
 
-#define PIN_KEY_Y0 4
-#define PIN_KEY_Y1 5
-#define PIN_KEY_Y2 6
-#define PIN_KEY_Y3 7
+#define PIN_XN2  8  //col -2
+#define PIN_XN1 21  //col -1
 
-#define PIN_CANH 1
-#define PIN_CANL 2
-#define PIN_XN2 8
-#define PIN_XN1 21
-
-#define PIN_X0 42
-#define PIN_X1 41
+#define PIN_X0 42   //col 0
+#define PIN_X1 41   //col 1
 #define PIN_X2 40
 #define PIN_X3 39
 

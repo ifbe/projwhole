@@ -79,32 +79,32 @@ static uint32_t keytable_arrow[ROWS][COLS] = {
 static uint32_t keytable_default[ROWS][COLS] = {
   {0, MYKEY_MEDIA_VOLUME_UP  },
   {0, MYKEY_MEDIA_VOLUME_DOWN},
-  {0, KEY_ESC       ,       KEY_F1,       KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10, KEY_F11, KEY_F12    },
-  {0, '`'           ,          '1',          '2',    '3',    '4',    '5',    '6',    '7',    '8',    '9',     '0',     '-',     '='    },
-  {0, KEY_TAB       ,          'q',          'w',    'e',    'r',    't',    'y',    'u',    'i',    'o',     'p',     '[',     ']'    },
-  {0, KEY_CAPS_LOCK ,          'a',          's',    'd',    'f',    'g',    'h',    'j',    'k',    'l',     ';',    '\'',            },
-  {0, KEY_LEFT_SHIFT,          'z',          'x',    'c',    'v',    'b',    'n',    'm',    ',',    '.',     '/',                     },
-  {0, KEY_LEFT_CTRL , KEY_LEFT_GUI, KEY_LEFT_ALT,    ' ',    ' ',    ' ',     ' '      }
+  {0, KEY_ESC       ,       KEY_F1,       KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10, KEY_F11,       KEY_F12                                                                },
+  {0, '`'           ,          '1',          '2',    '3',    '4',    '5',    '6',    '7',    '8',    '9',     '0',     '-',           '='                                                                },
+  {0, KEY_TAB       ,          'q',          'w',    'e',    'r',    't',    'y',    'u',    'i',    'o',     'p',     '[',           ']'                                                                },
+  {0, KEY_CAPS_LOCK ,          'a',          's',    'd',    'f',    'g',    'h',    'j',    'k',    'l',     ';',    '\n',          '\n', KEY_BACKSPACE , KEY_DELETE                                    },
+  {0, KEY_LEFT_SHIFT,          'z',          'x',    'c',    'v',    'b',    'n',    'm',    ',',    '.',     '/',    '\'',          '\\', KEY_HOME      , KEY_UP_ARROW  , KEY_END        , KEY_PAGE_UP  },
+  {0, KEY_LEFT_CTRL , KEY_LEFT_GUI, KEY_LEFT_ALT,    ' ',    ' ',    ' ',    ' ',    ' ',    ' ',    ' ',     ' ',     ' ',           ' ', KEY_LEFT_ARROW, KEY_DOWN_ARROW, KEY_RIGHT_ARROW, KEY_PAGE_DOWN}
 };
 static uint32_t keytable_abcdef[ROWS][COLS] = {
   {0, MYKEY_MEDIA_VOLUME_UP  },
   {0, MYKEY_MEDIA_VOLUME_DOWN},
-  {0, KEY_ESC,              KEY_F1,       KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10, KEY_F11, KEY_F12    },
-  {0, '`'           ,          '1',          '2',    '3',    '4',    '5',    '6',    '7',    '8',    '9',     '0',     '-',     '='    },
-  {0, KEY_TAB       ,          'a',          'b',    'c',    'd',    'e',    'f',    'g',    'h',    'i',     'j',     '[',     ']'    },
-  {0, KEY_CAPS_LOCK ,          'k',          'l',    'm',    'n',    'o',    'p',    'q',    'r',    's',     't',     ';',    '\''    },
-  {0, KEY_LEFT_SHIFT,          'u',          'v',    'w',    'x',    'y',    'z',    ',',    '.',   '\\',     '/',                     },
-  {0, KEY_LEFT_CTRL , KEY_LEFT_GUI, KEY_LEFT_ALT,    ' ',    ' ',    ' ',     ' '      }
+  {0, KEY_ESC,              KEY_F1,       KEY_F2, KEY_F3, KEY_F4, KEY_F5, KEY_F6, KEY_F7, KEY_F8, KEY_F9, KEY_F10, KEY_F11,       KEY_F12                                                                },
+  {0, '`'           ,          '1',          '2',    '3',    '4',    '5',    '6',    '7',    '8',    '9',     '0',     '-',           '='                                                                },
+  {0, KEY_TAB       ,          'a',          'b',    'c',    'd',    'e',    'f',    'g',    'h',    'i',     'j',     '[',           ']'                                                                },
+  {0, KEY_CAPS_LOCK ,          'k',          'l',    'm',    'n',    'o',    'p',    'q',    'r',    's',     't' ,   '\n',          '\n', KEY_BACKSPACE , KEY_DELETE                                    },
+  {0, KEY_LEFT_SHIFT,          'u',          'v',    'w',    'x',    'y',    'z',    ',',    '.',    ';',     '\'',   '\\',           '/', KEY_HOME      , KEY_UP_ARROW  , KEY_END        , KEY_PAGE_UP  },
+  {0, KEY_LEFT_CTRL , KEY_LEFT_GUI, KEY_LEFT_ALT,    ' ',    ' ',    ' ',    ' ',    ' ',    ' ',    ' ',     ' ',     ' ',           ' ', KEY_LEFT_ARROW, KEY_DOWN_ARROW, KEY_RIGHT_ARROW, KEY_PAGE_DOWN}
 };
 static uint32_t keytable_ascii[ROWS][COLS] = {
   {0, MYKEY_MEDIA_VOLUME_UP  },
   {0, MYKEY_MEDIA_VOLUME_DOWN},
-  {0, KEY_ESC       , ' '},
-  {0, '`'           , '0'},
-  {0, KEY_TAB       , '@'},
-  {0, KEY_CAPS_LOCK , 'P'},
-  {0, KEY_LEFT_SHIFT, '@'},
-  {0, KEY_LEFT_CTRL , 'p'}
+  {0, KEY_ESC       },
+  {0, '`'           },
+  {0, KEY_TAB       },
+  {0, KEY_CAPS_LOCK },
+  {0, KEY_LEFT_SHIFT},
+  {0, KEY_LEFT_CTRL }
 };
 
 // 元素周期表模式（8x18 的模式 3）：每格一个字符串，按下时逐字符发给主机。

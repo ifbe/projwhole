@@ -1,7 +1,7 @@
 #include "keyled.h"
 #include <Adafruit_NeoPixel.h>
 Adafruit_NeoPixel* pixels_y0y1 = 0;
-Adafruit_NeoPixel* pixels_y2y3 = 0;
+//Adafruit_NeoPixel* pixels_y2y3 = 0;
 //Adafruit_NeoPixel* pixels_y4y5 = 0;
 //Adafruit_NeoPixel* pixels_y6y7 = 0;
 
@@ -15,8 +15,8 @@ void initled()
   pixels_y0y1 = new Adafruit_NeoPixel(ROWS*COLS, PIN_LED_Y0, NEO_GRB + NEO_KHZ800);
   pixels_y0y1->begin();
 
-  pixels_y2y3 = new Adafruit_NeoPixel(ROWS*COLS, PIN_LED_Y2, NEO_GRB + NEO_KHZ800);
-  pixels_y2y3->begin();
+  //pixels_y2y3 = new Adafruit_NeoPixel(ROWS*COLS, PIN_LED_Y2, NEO_GRB + NEO_KHZ800);
+  //pixels_y2y3->begin();
 /*
   pixels_y4y5 = new Adafruit_NeoPixel(ROWS*COLS, PIN_LED_Y4, NEO_GRB + NEO_KHZ800);
   pixels_y4y5->begin();
