@@ -9,25 +9,31 @@
 #include "mod_usb.h"
 #include "mod_ble.h"
 #include "mod_wifi.h"
+#include "mod_socket.h"
 
 WebServer server(80);
 //
 extern String sta_ssid;
 extern String sta_pass;
+extern String ap_ssid;
+extern String ap_pass;
 //
 extern String udp_peer_ipv4;
 extern int udp_peer_port;
+extern String tcp_peer_ipv4;
+extern int tcp_peer_port;
+extern String ws_url;
 
 
 void build_page_head(String& html){
   html += "<a href='/wifistat'>wifi</a>\n";
   html += "<a href='/bt'>bt</a>\n";
-  html += "<a href='/udpstat'>udp</a>\n";
+  html += "<a href='/socketstat'>socket</a>\n";
   html += "<a href='/ws2812bstat'>ws2812b</a>\n";
   html += "<a href='/kbdstat'>keyboard</a>\n";
+  html += "<a href='/gpio'>gpio</a>\n";
   html += "<a href='/log'>log</a>\n";
   html += "<a href='/sys'>sys</a>\n";
-  html += "<a href='/gpio'>gpio</a>\n";
   html += "<hr>\n";
 }
 
@@ -49,7 +55,7 @@ static String html_escape(const String& in){
 }
 
 
-// wifi 页面：sta（客户端，账号/密码可改）+ ap（热点，只显示）。
+// wifi 页面：sta（客户端）+ ap（热点）的账号/密码都在这改，保存后重启。
 // 全机的 wifi 状态只在这里显示，别的页面不再重复（bt 也一样，见 handle_bt()）。
 void handle_wifi_stat() {
   kbdlog.println(__FUNCTION__);
@@ -61,30 +67,51 @@ void handle_wifi_stat() {
   html += "<style>body{font-family:monospace;}";
   html += "table{border-collapse:collapse;} td{padding:0 10px 0 0;vertical-align:top;}";
   html += "input[type='text'],input[type='password']{width:240px;}";
+  // 每段一张卡片：sta 一张、ap 一张（fit-content 不支持的浏览器退化成整行宽，也能看）
+  html += ".card{border:1px solid #ccc;border-radius:6px;padding:8px 12px;margin-bottom:12px;width:fit-content;}";
   html += "</style></head><body>\n";
   build_page_head(html);
 
   html += "<h3>wifi</h3>\n";
 
-  // sta：账号/密码可改（保存后重启），下面是当前连接情况
+  // status 卡：只放 wifi 共有的东西（AP/STA 是同一颗射频的两个角色）。
+  // 各角色自己的 status/ip/rssi/stations 留在各自那张卡里。
+  html += "<div class='card'>\n";
+  html += "<b>status</b>\n";
+  html += "<table>\n";
+  html += "<tr><td>mode</td><td>" + String(wifi_mode_str()) + "</td></tr>\n";
+  html += "<tr><td>channel</td><td>" + wifi_channel() + "</td></tr>\n";
+  html += "<tr><td>txpower</td><td>" + wifi_txpower() + "</td></tr>\n";
+  html += "<tr><td>hostname</td><td>" + html_escape(wifi_hostname()) + "</td></tr>\n";
+  html += "</table>\n";
+  html += "</div>\n";
+
+  // sta 配置卡：/stasave 只碰 sta；status/ip/rssi 是这个角色自己的状态，放这张卡里
+  html += "<div class='card'>\n";
   html += "<b>sta (client)</b>\n";
-  html += "<form action='/wifisave' method='POST'>";
+  html += "<form action='/stasave' method='POST'>";
   html += "<table>\n";
   html += "<tr><td>sta ssid</td><td><input type='text' name='ssid' value='" + html_escape(sta_ssid) + "'></td></tr>\n";
   html += "<tr><td>sta pass</td><td><input type='password' name='pass' value='" + html_escape(sta_pass) + "'></td></tr>\n";
-  html += "<tr><td></td><td><input type='submit' value='Save'></td></tr>\n";
   html += "<tr><td>sta status</td><td>" + String(wifi_sta_status_str()) + "</td></tr>\n";
   html += "<tr><td>sta ip</td><td>" + wifi_sta_ip() + "</td></tr>\n";
+  html += "<tr><td>sta mac</td><td>" + wifi_sta_mac() + "</td></tr>\n";
   html += "<tr><td>sta rssi</td><td>" + String(wifi_sta_rssi()) + "</td></tr>\n";
+  html += "<tr><td></td><td><input type='submit' value='Save sta'></td></tr>\n";
   html += "</table>\n";
   html += "</form>\n";
+  html += "</div>\n";
 
-  // ap：ssid/密码是编译期常量，只显示；stations 后面列出每个已连客户端的 ip/mac/rssi
-  html += "<br><b>ap (access point)</b>\n";
+  // ap 配置卡：/apsave 只碰 ap（EEPROM 里没存过就用 mod_wifi.cpp 里的默认值）；
+  // ip/stations/已连客户端也是这个角色自己的状态，放这张卡里
+  html += "<div class='card'>\n";
+  html += "<b>ap (access point)</b>\n";
+  html += "<form action='/apsave' method='POST'>";
   html += "<table>\n";
-  html += "<tr><td>ap ssid</td><td>" + html_escape(String(wifi_ap_ssid())) + "</td></tr>\n";
-  html += "<tr><td>ap pass</td><td>" + html_escape(String(wifi_ap_pass())) + "</td></tr>\n";
+  html += "<tr><td>ap ssid</td><td><input type='text' name='apssid' value='" + html_escape(String(wifi_ap_ssid())) + "'></td></tr>\n";
+  html += "<tr><td>ap pass</td><td><input type='password' name='appass' value='" + html_escape(String(wifi_ap_pass())) + "'></td></tr>\n";
   html += "<tr><td>ap ip</td><td>" + wifi_ap_ip() + "</td></tr>\n";
+  html += "<tr><td>ap mac</td><td>" + wifi_ap_mac() + "</td></tr>\n";
   html += "<tr><td>ap stations</td><td>" + String(wifi_ap_station_count()) + "</td></tr>\n";
 
   kbd_wifi_sta_t stas[KBD_WIFI_AP_STA_MAX];
@@ -94,29 +121,92 @@ void handle_wifi_stat() {
           + " mac=" + String(stas[i].mac) + " rssi=" + String(stas[i].rssi) + "</td></tr>\n";
   }
 
+  html += "<tr><td></td><td><input type='submit' value='Save ap'></td></tr>\n";
   html += "</table>\n";
-  html += "<small>sta = the network this keyboard joins (ssid/pass are stored in EEPROM, Save reboots); "
-          "ap = the hotspot this keyboard creates (fixed at compile time). "
-          "values are read when the page loads, reload to refresh.</small>\n";
+  html += "</form>\n";
+  html += "</div>\n";
+
+  html += "<small>";
+  html += "1. sta = the network this keyboard joins (empty = don't join); ap = the hotspot it creates.<br>";
+  html += "2. each Save writes only its own side to EEPROM, then reboots; values are read when the page loads (reload to refresh).<br>";
+  html += "3. ap defaults " + html_escape(String(wifi_ap_ssid_default())) + " / "
+        + html_escape(String(wifi_ap_pass_default())) + "; pass blank = open hotspot, else 8-63 chars (ssid 1-31). "
+          "after a change the phone must rejoin (forget the old network first).";
+  html += "</small>\n";
   html += "</body></html>\n";
 
   server.send(200, "text/html; charset=utf-8", html);
 }
 
-void handle_wifi_save() {
+// 保存失败时的提示页（几个 Save handler 共用）：400 + 原因 + 规则 + 返回链接
+static void send_save_error(const String& what, const String& err, const String& rule, const char* back) {
+  String html;
+  html += "<html><head><meta charset='utf-8'><title>save</title></head><body>\n";
+  html += "<b>没有保存 (" + what + ")</b><br>" + html_escape(err) + "<br><br>\n";
+  html += "<small>" + rule + "</small><br><br>\n";
+  html += "<a href='" + String(back) + "'>back</a>\n";
+  html += "</body></html>\n";
+  server.send(400, "text/html; charset=utf-8", html);
+}
+
+// /stasave：只管 sta。ap 的值由 /apsave 管，两个按钮互不影响。
+void handle_sta_save() {
   kbdlog.println(__FUNCTION__);
 
-  sta_ssid = server.arg("ssid");
-  sta_pass = server.arg("pass");
+  //表单里没有的字段（老页面/手写 curl）沿用当前值，不要当成清空
+  String new_ssid = server.hasArg("ssid") ? server.arg("ssid") : sta_ssid;
+  String new_pass = server.hasArg("pass") ? server.arg("pass") : sta_pass;
+
+  //空 ssid = 不连这个网络（合法）。非空时长度要在 core 能接受的范围内：
+  //WiFi.begin() 对 strlen(ssid) > 32 或 strlen(passphrase) > 64 直接返回 false（不报错，就是连不上）。
+  if(new_ssid.length() > 32){
+    kbdlog.println("stasave: rejected (ssid too long)");
+    send_save_error("sta", "sta ssid 最长 32 字节", "留空 = 不连这个网络。改好再存。", "/wifistat");
+    return;
+  }
+  if(new_pass.length() > 64){
+    kbdlog.println("stasave: rejected (pass too long)");
+    send_save_error("sta", "sta pass 最长 64 字节", "留空 = 开放网络/不加密。改好再存。", "/wifistat");
+    return;
+  }
+
+  sta_ssid = new_ssid;
+  sta_pass = new_pass;
   ssidpass_save(sta_ssid, sta_pass);
-  server.send(200, "text/plain", "ssidpass saved. Restarting...");
-  delay(1000);
+
+  server.send(200, "text/plain", "sta saved. Restarting...");
+  delay(200);   //够把响应发出去就行（原来 1000 是白等）
+  esp_restart();
+}
+
+// /apsave：只管 ap。
+void handle_ap_save() {
+  kbdlog.println(__FUNCTION__);
+
+  String new_ssid = server.hasArg("apssid") ? server.arg("apssid") : ap_ssid;
+  String new_pass = server.hasArg("appass") ? server.arg("appass") : ap_pass;
+
+  //ap 凭据必须校验通过才写 EEPROM：存了非法密码，重启后 softAP 起不来，
+  //网页也进不去，只能接串口/重新烧写来救。
+  String err;
+  if(!wifi_ap_cred_valid(new_ssid, new_pass, err)){
+    kbdlog.printf("apsave: rejected (%s)\n", err.c_str());
+    send_save_error("ap", err, "ap ssid 1-31 字节；ap pass 留空(开放热点)或 8-63 字节。改好再存。", "/wifistat");
+    return;
+  }
+
+  ap_ssid = new_ssid;
+  ap_pass = new_pass;
+  apssidpass_save(ap_ssid, ap_pass);
+
+  server.send(200, "text/plain", "ap saved. Restarting...");
+  delay(200);
   esp_restart();
 }
 
 
-// ---- bt (蓝牙状态) ----
-// 3 秒自动刷新，所以它自己不打日志（和 /log 一样），免得把日志冲掉。
+// ---- bt (蓝牙状态 + 广播名/配对码设置) ----
+// 这页现在有输入框，所以**不能**自动刷新（3 秒重载会把没保存的输入冲掉）；要刷新就手动重载。
 // 全机的蓝牙状态只在这里显示，/sys 上不再重复。
 void handle_bt() {
   if(server.hasArg("bt"))kbdlog_set_bt_verbose(0 != server.arg("bt").toInt());
@@ -128,15 +218,19 @@ void handle_bt() {
   String html;
   html.reserve(1536);
 
-  html += "<html><head><meta charset='utf-8'>";
-  html += "<meta http-equiv='refresh' content='3'>";
-  html += "<title>bt</title>";
+  html += "<html><head><meta charset='utf-8'><title>bt</title>";
   html += "<style>body{font-family:monospace;}";
   html += "table{border-collapse:collapse;} td{padding:0 10px 0 0;vertical-align:top;}";
+  html += "input[type='text']{width:240px;}";
+  html += ".card{border:1px solid #ccc;border-radius:6px;padding:8px 12px;margin-bottom:12px;width:fit-content;}";
   html += "</style></head><body>\n";
   build_page_head(html);
 
   html += "<h3>bt</h3>\n";
+
+  // 状态卡（只读）
+  html += "<div class='card'>\n";
+  html += "<b>status</b>\n";
   html += "<table>\n";
   html += "<tr><td>name</td><td>" + html_escape(String(blekbd_name())) + "</td></tr>\n";
   html += "<tr><td>address</td><td>" + blekbd_address() + "</td></tr>\n";
@@ -154,36 +248,230 @@ void handle_bt() {
 
   html += "<a href='/bt?bt=" + String(kbdlog_bt_verbose() ? 0 : 1) + "'>[bt verbose: "
         + String(kbdlog_bt_verbose() ? "on" : "off") + "]</a><br>\n";
-  html += "<small>auto refresh 3s. connected=0 advertising=1 peers=0: waiting for a host; "
-          "advertising=0 with connected=0: nothing can find it - switch [bt verbose] on (here or on the "
-          "<a href='/log'>log</a> page) and watch the BT_* / ble: lines. "
-          "keys go to USB HID and BLE at the same time, no switch needed.</small>\n";
+  html += "</div>\n";
+
+  // 键盘配置卡：广播名 + 配对码，保存后重启
+  html += "<div class='card'>\n";
+  html += "<b>keyboard</b>\n";
+  html += "<form action='/btsave' method='POST'>";
+  html += "<table>\n";
+  html += "<tr><td>name</td><td><input type='text' name='name' value='" + html_escape(String(blekbd_name())) + "'></td></tr>\n";
+  html += "<tr><td>passkey</td><td><input type='text' name='passkey' value='"
+        + (blekbd_passkey() ? String(blekbd_passkey()) : String("")) + "'></td></tr>\n";
+  html += "<tr><td></td><td><input type='submit' value='Save bt'></td></tr>\n";
+  html += "</table>\n";
+  html += "</form>\n";
+  html += "</div>\n";
+
+  // 手柄卡片：现在只是占位（没有任何 HID 报告/服务被创建），
+  // 先把这个位置留出来，等真做的时候把状态接到这里（见 todo.md 的"蓝牙手柄"条目）。
+  html += "<div class='card'>\n";
+  html += "<b>gamepad</b> <small>placeholder, no reports sent yet</small>\n";
+  html += "<table>\n";
+  html += "<tr><td>enabled</td><td>no</td></tr>\n";
+  html += "<tr><td>name</td><td>-</td></tr>\n";
+  html += "<tr><td>connected</td><td>-</td></tr>\n";
+  html += "<tr><td>advertising</td><td>-</td></tr>\n";
+  html += "</table>\n";
+  html += "</div>\n";
+
+  html += "<small>";
+  html += "1. name/passkey are stored in EEPROM and applied after a reboot; a blank name uses the library default (ESP32 Keyboard), and a short name (&lt;= 10 chars) is safest for the phone's scan list.<br>";
+  html += "2. passkey blank or 0 = no pairing code (just works); otherwise 1-6 digits, and the phone asks for it (shown padded to 6, e.g. 12345 -&gt; 012345).<br>";
+  html += "3. saving bt clears the pairing on the keyboard side, so the phone has to pair again (forget the device on the phone if it keeps using the old entry); keys still go to USB HID and BLE at the same time.<br>";
+  html += "4. no auto refresh here (it would wipe the boxes) - reload the page to update the values.";
+  html += "</small>\n";
   html += "</body></html>\n";
 
   server.send(200, "text/html; charset=utf-8", html);
 }
 
+// /btsave：广播名 + 配对码，重启生效
+void handle_bt_save() {
+  kbdlog.println(__FUNCTION__);
 
-void handle_udp_stat() {
+  //缺字段就沿用当前生效的值（老页面/手写请求）
+  String new_name = server.hasArg("name") ? server.arg("name") : String(blekbd_name());
+  String keytext = server.hasArg("passkey") ? server.arg("passkey")
+                 : (blekbd_passkey() ? String(blekbd_passkey()) : String(""));
+
+  String err;
+  if(!blekbd_name_check(new_name, err)){
+    kbdlog.printf("btsave: rejected (%s)\n", err.c_str());
+    send_save_error("bt", err, "name 留空 = 用默认名；否则 1-24 字节、不要不可见字符。", "/bt");
+    return;
+  }
+
+  uint32_t key = 0;
+  if(!blekbd_passkey_parse(keytext, key, err)){
+    kbdlog.printf("btsave: rejected (%s)\n", err.c_str());
+    send_save_error("bt", err, "配对码留空或 0 = 不用；否则 1-6 位数字。", "/bt");
+    return;
+  }
+
+  blekbd_cfg_set(new_name, key);
+  blekbd_forget_bonds();   // 清掉老绑定，否则手机复用老密钥、新配对码不会弹
+
+  server.send(200, "text/plain", "bt saved. Restarting...");
+  delay(200);
+  esp_restart();
+}
+
+
+// ---- socket：udp / tcp / ws(websocket) 三个独立目标 ----
+// 每个一张卡片、各自一个 Set 按钮、各自一个端点（/udpsave /tcpsave /wssave）；
+// **配置留空 = 不启用**，保存是立即生效（不用重启），所以直接 303 回本页。
+void handle_socket_stat() {
   kbdlog.println(__FUNCTION__);
 
   String html;
+  html.reserve(2048);
+
+  html += "<html><head><meta charset='utf-8'><title>socket</title>";
+  html += "<style>body{font-family:monospace;}";
+  html += "table{border-collapse:collapse;} td{padding:0 10px 0 0;vertical-align:top;}";
+  html += "input[type='text']{width:240px;}";
+  html += ".card{border:1px solid #ccc;border-radius:6px;padding:8px 12px;margin-bottom:12px;width:fit-content;}";
+  html += "</style></head><body>\n";
   build_page_head(html);
+
+  html += "<h3>socket</h3>\n";
+
+  // udp：现在唯一真的会发按键的通道（arrow 模式）
+  html += "<div class='card'>\n";
+  html += "<b>udp</b>\n";
   html += "<form action='/udpsave' method='POST'>";
-  html += "ipv4: <input type='text' name='ipv4' value='" + udp_peer_ipv4 + "'><br>";
-  html += "port: <input type='text' name='port' value='" + String(udp_peer_port) + "'><br>";
-  html += "<input type='submit' value='Save'>";
-  html += "</form>";
-  server.send(200, "text/html", html);
+  html += "<table>\n";
+  html += "<tr><td>ipv4</td><td><input type='text' name='ipv4' value='" + html_escape(udp_peer_ipv4) + "'></td></tr>\n";
+  html += "<tr><td>port</td><td><input type='text' name='port' value='"
+        + (udp_peer_port ? String(udp_peer_port) : String("")) + "'></td></tr>\n";
+  html += "<tr><td>status</td><td>" + String(udp_enabled() ? "enabled" : "disabled (empty)") + "</td></tr>\n";
+  html += "<tr><td></td><td><input type='submit' value='Set udp'></td></tr>\n";
+  html += "</table>\n";
+  html += "</form>\n";
+  html += "</div>\n";
+
+  // tcp：配置就位，但还没接发送
+  html += "<div class='card'>\n";
+  html += "<b>tcp</b>\n";
+  html += "<form action='/tcpsave' method='POST'>";
+  html += "<table>\n";
+  html += "<tr><td>ipv4</td><td><input type='text' name='ipv4' value='" + html_escape(tcp_peer_ipv4) + "'></td></tr>\n";
+  html += "<tr><td>port</td><td><input type='text' name='port' value='"
+        + (tcp_peer_port ? String(tcp_peer_port) : String("")) + "'></td></tr>\n";
+  html += "<tr><td>status</td><td>" + String(tcp_enabled() ? "enabled" : "disabled (empty)")
+        + (tcp_enabled() ? " - config only, not sending yet" : "") + "</td></tr>\n";
+  html += "<tr><td></td><td><input type='submit' value='Set tcp'></td></tr>\n";
+  html += "</table>\n";
+  html += "</form>\n";
+  html += "</div>\n";
+
+  // ws：WebSocket（注意别和上面的 ws2812b 灯带页混了）
+  html += "<div class='card'>\n";
+  html += "<b>ws (websocket)</b>\n";
+  html += "<form action='/wssave' method='POST'>";
+  html += "<table>\n";
+  html += "<tr><td>url</td><td><input type='text' name='url' value='" + html_escape(ws_url) + "'></td></tr>\n";
+  html += "<tr><td>status</td><td>" + String(ws_enabled() ? "enabled" : "disabled (empty)")
+        + (ws_enabled() ? " - config only, not sending yet" : "") + "</td></tr>\n";
+  html += "<tr><td></td><td><input type='submit' value='Set ws'></td></tr>\n";
+  html += "</table>\n";
+  html += "</form>\n";
+  html += "</div>\n";
+
+  html += "<small>";
+  html += "1. udp/tcp need both ipv4 and port; ws needs a url; anything left blank = disabled.<br>";
+  html += "2. saved to EEPROM and applied immediately (no reboot); status is recomputed from the saved values.<br>";
+  html += "3. only udp sends keys today (arrow mode, one byte per key press). tcp/ws are config-only for now.";
+  html += "</small>\n";
+  html += "</body></html>\n";
+
+  server.send(200, "text/html; charset=utf-8", html);
 }
+
+// 三个 Set 按钮的公共部分：读字段（缺字段沿用当前值）→ 校验 → 落盘 → 303 回本页
+static bool socket_arg_int(const char* name, int& out) {
+  String s = server.arg(name);
+  s.trim();
+  if(0 == s.length()){
+    out = 0;                     // 留空 = 不启用
+    return true;
+  }
+  for(size_t i=0;i<s.length();i++){
+    if(s[i] < '0' || s[i] > '9')return false;
+  }
+  out = s.toInt();
+  return true;
+}
+
 void handle_udp_save() {
   kbdlog.println(__FUNCTION__);
 
-  udp_peer_ipv4 = server.arg("ipv4");
-  udp_peer_port = server.arg("port").toInt();
+  String new_ip    = server.hasArg("ipv4") ? server.arg("ipv4") : udp_peer_ipv4;
+  int    new_port  = udp_peer_port;
+
+  String err;
+  if(!socket_arg_int("port", new_port)){
+    kbdlog.println("udpsave: rejected (port not a number)");
+    send_save_error("udp", "port 要是数字", "留空或 0 = 不启用。改好再存。", "/socketstat");
+    return;
+  }
+  if(!socket_ipv4_check(new_ip, err) || !socket_port_check(new_port, err)){
+    kbdlog.printf("udpsave: rejected (%s)\n", err.c_str());
+    send_save_error("udp", err, "ipv4 形如 192.168.4.2；port 1-65535；任一项留空 = 不启用。", "/socketstat");
+    return;
+  }
+
+  udp_peer_ipv4 = new_ip;
+  udp_peer_port = new_port;
   udppeer_save(udp_peer_ipv4, udp_peer_port);
 
-  server.sendHeader("Location", "/udpstat");
+  server.sendHeader("Location", "/socketstat");
+  server.send(303);
+}
+
+void handle_tcp_save() {
+  kbdlog.println(__FUNCTION__);
+
+  String new_ip    = server.hasArg("ipv4") ? server.arg("ipv4") : tcp_peer_ipv4;
+  int    new_port  = tcp_peer_port;
+
+  String err;
+  if(!socket_arg_int("port", new_port)){
+    kbdlog.println("tcpsave: rejected (port not a number)");
+    send_save_error("tcp", "port 要是数字", "留空或 0 = 不启用。改好再存。", "/socketstat");
+    return;
+  }
+  if(!socket_ipv4_check(new_ip, err) || !socket_port_check(new_port, err)){
+    kbdlog.printf("tcpsave: rejected (%s)\n", err.c_str());
+    send_save_error("tcp", err, "ipv4 形如 192.168.4.2；port 1-65535；任一项留空 = 不启用。", "/socketstat");
+    return;
+  }
+
+  tcp_peer_ipv4 = new_ip;
+  tcp_peer_port = new_port;
+  tcppeer_save(tcp_peer_ipv4, tcp_peer_port);
+
+  server.sendHeader("Location", "/socketstat");
+  server.send(303);
+}
+
+void handle_ws_save() {
+  kbdlog.println(__FUNCTION__);
+
+  String new_url = server.hasArg("url") ? server.arg("url") : ws_url;
+
+  String err;
+  if(!socket_wsurl_check(new_url, err)){
+    kbdlog.printf("wssave: rejected (%s)\n", err.c_str());
+    send_save_error("ws", err, "留空 = 不启用；填的话形如 ws://192.168.4.2:81/。", "/socketstat");
+    return;
+  }
+
+  ws_url = new_url;
+  wsurl_save(ws_url);
+
+  server.sendHeader("Location", "/socketstat");
   server.send(303);
 }
 
@@ -457,16 +745,10 @@ static void kbd_build_page(String& html, int t, bool from_post, const String& er
   html += "</form>\n";
 
   html += "<small>";
-  html += "modes: 0=normal (default), 1=abcdef, 2=ascii, 3=periodic table.<br>";
-  html += "mode keys are disabled for now: click a mode above to switch the active mode (web only).<br>";
-  html += "mode 2 (ascii): columns 0-1 are the special keys (editable), columns 2-17 are ASCII 0x00-0x7f by position "
-          "(ascii = y*16 + x - 2) and are read-only; \"-\" means the code does nothing (BS/TAB/LF and 0x20-0x7e work).<br>";
-  html += "mode 0-2 values are hex, empty means 00 (key sends nothing).<br>";
-  html += "columns 0 and 1 are only highlighted grey now (they are ordinary keys).<br>";
-  html += "USB: 00 none, 04-A4 keys (04=a, 28=Enter, 29=Esc, 2C=Space, 2B=Tab, 4F/50/51/52=Right/Left/Down/Up), E0-E7 modifiers (E0 LCtrl E1 LShift E2 LAlt E3 LGUI).<br>";
-  html += "BLE: 00 none, 20-7E printable ASCII, 80-87 modifiers, 88-FF non-printing (B1=Esc, B3=Tab, C1=CapsLock, D2=Home, D3=PageUp, D5=End, D6=PageDown), 800000xx media keys (80000020=Vol+, 80000040=Vol-).<br>";
-  html += "mode 3 cells are strings typed out character by character (e.g. H, He, La-Lu); USB HID and BLE each keep their own table.<br>";
-  html += "changes are RAM only, a reboot restores the compile-time tables.";
+  html += "1. modes: 0 normal / 1 abcdef / 2 ascii / 3 periodic; click a mode above to switch + edit it (mode keys on the keyboard are disabled).<br>";
+  html += "2. mode 2: cols 0-1 = special keys (editable), cols 2-17 = ASCII 0x00-0x7f by position (ascii = y*16+x-2, read-only, \"-\" = sends nothing); mode 3: strings typed out per character.<br>";
+  html += "3. hex, empty = 00 (sends nothing), grey cols 0-1 are ordinary keys. USB: 04-A4 keys (04=a, 28=Enter, 29=Esc, 2C=Space, 4F-52=arrows), E0-E7 modifiers. BLE: 20-7E ASCII, 80-87 modifiers, 88-FF non-printing (B1=Esc, C1=CapsLock), 800000xx media.<br>";
+  html += "4. RAM only, a reboot restores the compile-time tables (USB and BLE keep separate tables).";
   html += "</small>\n";
 }
 
@@ -664,11 +946,11 @@ static String gpio_purpose(int g){
 
   switch(g){
   case PIN_LED_Y0: return "LED strip Y0 (driven)";
-  case PIN_LED_Y2: return "LED strip Y2 (init only, never shown)";
-  case PIN_LED_Y4: return "LED strip Y4 (not used)";
-  case PIN_LED_Y6: return "LED strip Y6 (not used)";
-  case PIN_CANH:   return "CANH (reserved, unused)";
-  case PIN_CANL:   return "CANL (reserved, unused)";
+  //case PIN_LED_Y2: return "LED strip Y2 (init only, never shown)";
+  //case PIN_LED_Y4: return "LED strip Y4 (not used)";
+  //case PIN_LED_Y6: return "LED strip Y6 (not used)";
+  //case PIN_CANH:   return "CANH (reserved, unused)";
+  //case PIN_CANL:   return "CANL (reserved, unused)";
   case 19:         return "USB D- (TinyUSB CDC+HID)";
   case 20:         return "USB D+ (TinyUSB CDC+HID)";
   case 43:         return "UART0 TX (ROM console)";
@@ -803,18 +1085,35 @@ void handleRoot() {
 
 
 void wifi_web_poll(){
+  //临时诊断（观察期结束可删）：单次 handleClient() 超过 1s，说明踩到了
+  //_parseRequest() -> Stream::readStringUntil() -> Stream::timedRead() 那条
+  //"纯忙等"路径（gotcha.md #13 的路径 2，client 只发一半请求）。
+  //它自旋在单次调用内部，循环末尾的 vTaskDelay(1) 插不进去，理论上仍能饿死 IDLE0。
+  uint32_t t0 = millis();
   server.handleClient();
+  uint32_t dt = millis() - t0;
+  if(dt >= 1000)kbdlog.printf("web: handleClient %ums\n", (unsigned)dt);
+
+  //处理完就主动关，不等对端关。
+  //NetworkClient::connected() 收到 FIN（对端正常关闭）时仍然返回 true，
+  //所以这条连接会一直挂在 handleClient() 里直到 accept+HTTP_MAX_DATA_WAIT(5s)，
+  //那 5 秒 casualloop 只能 yield()，core0 的 IDLE0 拿不到 CPU -> TASK_WDT。
+  //stop() 是优雅关闭（close(fd)），响应数据已经交给 lwIP，会先发完再 FIN。
+  if(server.client())server.client().stop();
 }
 void wifi_web_init()
 {
   server.on("/wifistat", handle_wifi_stat);
-  server.on("/wifi", handle_wifi_stat);
-  server.on("/wifisave", handle_wifi_save);
+  server.on("/stasave", handle_sta_save);
+  server.on("/apsave", handle_ap_save);
 
   server.on("/bt", handle_bt);
+  server.on("/btsave", handle_bt_save);
 
-  server.on("/udpstat", handle_udp_stat);
+  server.on("/socketstat", handle_socket_stat);
   server.on("/udpsave", handle_udp_save);
+  server.on("/tcpsave", handle_tcp_save);
+  server.on("/wssave", handle_ws_save);
 
   server.on("/ws2812bstat", handle_ws2812b_stat);
   server.on("/ws2812bsave", handle_ws2812b_save);
@@ -822,10 +1121,11 @@ void wifi_web_init()
   server.on("/kbdstat", handle_kbd_stat);
   server.on("/kbdsave", handle_kbd_save);
 
+  server.on("/gpio", handle_gpio);
+  
   server.on("/log", handle_log);
 
   server.on("/sys", handle_sys);
-  server.on("/gpio", handle_gpio);
   server.on("/sysaction", handle_sys_action);
 
   server.on("/", handleRoot);

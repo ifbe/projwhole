@@ -1,21 +1,20 @@
+//
+#define board_version1 1    //old not used
+#define board_version2 2    //now 8x18 keyboard
+#define board_version3 3    //new pcb
+#define board_chosen board_version3
 
-#define mode_arrow 0
-#define mode_8x18 1
-#define mode_chosen mode_8x18
+//
+#define mode_arrow2x2 0
+#define mode_arrow4x4 1
+#define mode_8x18 2
+#define mode_chosen mode_arrow2x2
 
 // 8x18 模式下 currmode 的含义（arrow 模式只有一个键表，不用这些）
 #define kbdmode_normal 0      // 常规键位
 #define kbdmode_abcdef 1
 #define kbdmode_ascii 2
 #define kbdmode_periodic 3    // 元素周期表（字符串表在 mod_usb.cpp / mod_ble.cpp 里）
-
-#if mode_chosen==mode_arrow
-  #define ROWS 4
-  #define COLS 4
-#else
-  #define ROWS 8
-  #define COLS 18
-#endif
 
 // 模式键（右下角 4 个）暂时取消：现在只能在网页里切模式（/kbdstat 的 set mode 按钮）。
 // 几何宏先留着，以后想恢复把 kbd_is_modekey 改回下面注释那行即可。
@@ -26,18 +25,20 @@
 //#define kbd_is_modekey(x, y)  ( ((y)==KBD_MODEKEY_ROW) && ((x)>=KBD_MODEKEY_COL0) )
 #define kbd_is_modekey(x, y)  (0)
 
-// 只有 8x18 模式才有元素周期表模式（模式 3）
-#if mode_chosen==mode_8x18
-  #define kbd_periodic_enabled 1
-#else
+#if mode_chosen==mode_arrow2x2
+  #define ROWS 2
+  #define COLS 2
   #define kbd_periodic_enabled 0
+#elif mode_chosen==mode_arrow4x4
+  #define ROWS 4
+  #define COLS 4
+  #define kbd_periodic_enabled 0
+#else
+  #define ROWS 8
+  #define COLS 18
+  #define kbd_periodic_enabled 1
 #endif
 
-
-#define board_version1 1
-#define board_version2 2
-#define board_version2 3
-#define board_chosen board_version2
 
 #if board_chosen==board_version1
   #define PIN_LED_Y0 3
@@ -80,10 +81,10 @@
   #define PIN_KEY_Y1 3    //jtag choose
   #define PIN_KEY_Y2 45   //vdd_spi
   #define PIN_KEY_Y3 46   //boot log
-  #define PIN_KEY_Y0 15
-  #define PIN_KEY_Y1 16
-  #define PIN_KEY_Y2 17
-  #define PIN_KEY_Y3 18
+  #define PIN_KEY_Y4 15
+  #define PIN_KEY_Y5 16
+  #define PIN_KEY_Y6 17
+  #define PIN_KEY_Y7 18
 #endif
 
 

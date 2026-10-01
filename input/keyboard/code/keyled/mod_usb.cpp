@@ -9,7 +9,13 @@ extern int currmode;
 // 表编号 = 模式号：0 = default(常规键位)，1 = abcdef，2 = ascii，3 = periodic(元素周期表)
 // 值是**原始 HID usage**（pressRaw 直接发），所以写 HID_KEY_*；BLE 那边是另一套写法
 // （'a' 这类 ASCII 交给库里的 _asciimap，KEY_* 是非打印键）。**改表时两张表要一起改**。
-#if mode_chosen==mode_arrow
+#if mode_chosen==mode_arrow2x2
+// arrow 模式只有一张表
+static byte keytable_arrow[ROWS][COLS] = {
+  {HID_KEY_ARROW_UP  ,  HID_KEY_ARROW_RIGHT},
+  {HID_KEY_ARROW_LEFT,  HID_KEY_ARROW_DOWN }
+};
+#elif mode_chosen==mode_arrow4x4
 // arrow 模式只有一张表
 static byte keytable_arrow[ROWS][COLS] = {
   {                 0,                    0, HID_KEY_PAGE_UP, HID_KEY_END      },
@@ -72,7 +78,22 @@ static char keytable_periodic[KBDSTR_ROWS][KBDSTR_COLS][KBDSTR_MAXLEN] = {
 
 
 
-#if mode_chosen==mode_arrow
+#if mode_chosen==mode_arrow2x2
+
+void usbkbd_press(int x, int y)
+{
+  if( (x<0) || (x>=2) )return;
+  if( (y<0) || (y>=2) )return;
+  usbkbd.pressRaw(keytable_arrow[y][x]);
+}
+void usbkbd_release(int x, int y)
+{
+  if( (x<0) || (x>=2) )return;
+  if( (y<0) || (y>=2) )return;
+  usbkbd.releaseRaw(keytable_arrow[y][x]);
+}
+
+#elif mode_chosen==mode_arrow4x4
 
 void usbkbd_press(int x, int y)
 {
@@ -153,11 +174,37 @@ void usbkbd_release_ascii(char c){
 // 表编号 = 模式号：0 = normal(常规键位)，1 = abcdef，2 = ascii，3 = periodic(元素周期表)。
 // 周期表是字符串表（见本文件末尾），所以 t=3 时这里没有 byte 表（返回 nullptr）。
 // arrow 模式下只有一张表，编号固定为 0。
+#if mode_chosen==mode_arrow2x2
+
 static byte* usbkbd_table(int t){
-#if mode_chosen==mode_arrow
   (void)t;
   return &keytable_arrow[0][0];
+}
+int usbkbd_table_count(){
+  return 1;
+}
+const char* usbkbd_table_name(int t){
+  (void)t;
+  return "arrow";
+}
+
+#elif mode_chosen==mode_arrow4x4
+
+static byte* usbkbd_table(int t){
+  (void)t;
+  return &keytable_arrow[0][0];
+}
+int usbkbd_table_count(){
+  return 1;
+}
+const char* usbkbd_table_name(int t){
+  (void)t;
+  return "arrow";
+}
+
 #else
+
+static byte* usbkbd_table(int t){
   switch(t){
   case 0:
     return &keytable_default[0][0];
@@ -168,22 +215,11 @@ static byte* usbkbd_table(int t){
   default:
     return 0;   // 3 = 周期表，键值不在 byte 表里
   }
-#endif
 }
-
 int usbkbd_table_count(){
-#if mode_chosen==mode_arrow
-  return 1;
-#else
   return 4;
-#endif
 }
-
 const char* usbkbd_table_name(int t){
-#if mode_chosen==mode_arrow
-  (void)t;
-  return "arrow";
-#else
   switch(t){
   case 0: return "normal";
   case 1: return "abcdef";
@@ -191,8 +227,10 @@ const char* usbkbd_table_name(int t){
   case 3: return "periodic";
   default: return "?";
   }
-#endif
 }
+
+#endif
+
 
 // USB HID usage：00 空位，04-A4 普通键，E0-E7 修饰键，其余视为非法
 bool usbkbd_key_valid(uint32_t val){

@@ -35,3 +35,11 @@ bool blekbd_is_advertising();
 int blekbd_connected_count();
 const char* blekbd_name();     // 广播/手机列表里看到的名字
 String blekbd_address();       // 本机 BLE 地址（没初始化时是 00:00:00:00:00:00）
+
+// ---- 广播名 / 配对码（可在 /bt 页面改，存 EEPROM，重启生效）----
+const char* blekbd_name_default();                                  // 库默认名
+uint32_t blekbd_passkey();                                          // 当前配对码，0 = 不用
+bool blekbd_name_check(const String& name, String& err);            // "" = 用默认名（合法）；否则 1-24 字节
+bool blekbd_passkey_parse(const String& text, uint32_t& key, String& err);  // ""/"0" → key=0（关闭）
+bool blekbd_cfg_set(const String& name, uint32_t passkey);          // 写全局 + EEPROM（调用方先校验）
+void blekbd_forget_bonds();                                         // 清本机配对绑定（改了名字/配对码后调）

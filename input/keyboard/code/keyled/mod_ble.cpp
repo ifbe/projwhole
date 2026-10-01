@@ -1,5 +1,7 @@
 #include "keyled.h"
 #include "mod_ble.h"
+#include "mod_log.h"
+#include "mod_eeprom.h"
 #include <string.h>
 
 //https://github.com/T-vK/ESP32-BLE-Keyboard
@@ -15,6 +17,9 @@
 #include <BleKeyboard.h>
 #undef private
 #include <BLEDevice.h>
+#if defined(CONFIG_NIMBLE_ENABLED)
+#include <host/ble_store.h>   // ble_store_clear()：清本机的配对绑定
+#endif
 #define MYKEY_MEDIA_NEXT_TRACK                     0x80000001   //= {1, 0};
 #define MYKEY_MEDIA_PREVIOUS_TRACK                 0x80000002   //= {2, 0};
 #define MYKEY_MEDIA_STOP                           0x80000004   //= {4, 0};
@@ -63,11 +68,197 @@ protected:
 KbdBleKeyboard blekbd;
 extern int currmode;
 
+// ---- 广播名 / 配对码（可配置，存 EEPROM）----
+// 名字空 = 用库默认名；配对码 0 = 不用（Just Works，手机上不会弹码）。
+static String ble_name = "";
+static uint32_t ble_passkey = 0;
+
+void blekbd_init()
+{
+  // 先读配置：名字必须在 begin() 之前设好（库的 begin() 会把它交给 BLEDevice::init()）
+  {
+    String n = "";
+    uint32_t k = 0;
+    blecfg_load(n, k);
+    if(n.length() > 0)ble_name = n;
+    ble_passkey = k;
+  }
+
+  if(ble_name.length() > 0){
+    blekbd.setName(ble_name.c_str());
+    kbdlog.printf("ble: name=%s\n", ble_name.c_str());
+  }
+  else{
+    kbdlog.printf("ble: name=default (%s)\n", blekbd_name_default());
+  }
+
+  blekbd.begin();
+
+  // 安全参数只能放在 begin() 之后：
+  //   BLEDevice::init() 先把 sm_io_cap 复位成 NO_INPUT_OUTPUT、mitm=0，
+  //   库的 begin() 里又只会 setAuthenticationMode(ESP_LE_AUTH_BOND)（mitm 还是 0）。
+  // 有配对码时覆盖成"本机显示、手机输入"的静态码模式；没有就保持库的 Just Works 不动。
+  if(ble_passkey > 0){
+    BLESecurity::setPassKey(true, ble_passkey);
+    BLESecurity::setCapability(BLE_HS_IO_DISPLAY_ONLY);       // core 走 BLE_SM_IOACT_DISP 注入这个码
+    BLESecurity::setAuthenticationMode(true, true, true);     // bonding + mitm + secure connections
+    kbdlog.printf("ble: passkey=%06u (mitm on)\n", (unsigned)ble_passkey);
+  }
+  else{
+    kbdlog.println("ble: passkey off (just works)");
+  }
+}
+
+const char* blekbd_name_default()
+{
+  return "ESP32 Keyboard";   // 库 BleKeyboard 构造函数的默认 deviceName
+}
+
+uint32_t blekbd_passkey()
+{
+  return ble_passkey;
+}
+
+// 名字：空 = 用默认名（合法）；否则 1..24 字节。
+// 上限不是协议限制（GAP 名能到 248），而是广告包只有 31 字节：
+// HID 的 service UUID + appearance 已经占掉大半，名字太长手机上可能扫不到，所以限短一点。
+bool blekbd_name_check(const String& name, String& err)
+{
+  if(0 == name.length())return true;
+
+  if(name.length() > 24){
+    err = "name 最长 24 字节（广告包只有 31 字节）";
+    return false;
+  }
+  for(size_t i=0;i<name.length();i++){
+    uint8_t c = (uint8_t)name[i];
+    if(c < 0x20 || c == 0x7f){
+      err = "name 里有不可见字符";
+      return false;
+    }
+  }
+  return true;
+}
+
+// 配对码文本："", "0" → 关闭（key=0）；否则必须是 1..999999 的十进制数字。
+// BLE 的配对码就是 6 位十进制（显示时补前导零，所以填 12345 手机上会显示 012345）。
+bool blekbd_passkey_parse(const String& text, uint32_t& key, String& err)
+{
+  String s = text;
+  s.trim();
+
+  key = 0;
+  if(0 == s.length())return true;
+
+  for(size_t i=0;i<s.length();i++){
+    if(s[i] < '0' || s[i] > '9'){
+      err = "配对码只能是数字（6 位，例如 123456）";
+      return false;
+    }
+  }
+  if(s.length() > 6){
+    err = "配对码最多 6 位数字";
+    return false;
+  }
+
+  uint32_t v = (uint32_t)s.toInt();
+  if(v > 999999){
+    err = "配对码最大 999999";
+    return false;
+  }
+  key = v;   // 0 也走这里：等于关闭
+  return true;
+}
+
+bool blekbd_cfg_set(const String& name, uint32_t passkey)
+{
+  ble_name = name;
+  ble_passkey = passkey;
+
+  String n = name;
+  return blecfg_save(n, passkey);
+}
+
+// 清掉本机存的配对绑定。改名字/配对码之后必须清：
+// 手机和本机原来配对过的话，双方都存着老密钥，不清就直接复用老绑定，
+// 新的配对码根本不会弹出来——表现就是"设了码但没用"。
+void blekbd_forget_bonds()
+{
+#if defined(CONFIG_NIMBLE_ENABLED)
+  int rc = ble_store_clear();
+  kbdlog.printf("ble: forget bonds rc=%d\n", rc);
+#else
+  kbdlog.println("ble: forget bonds not supported in this build");
+#endif
+}
+void blekbd_exit()
+{
+}
+void blekbd_press_u32(uint32_t val){
+  if(val <= 0xffff){
+    blekbd.press(val);
+  }
+  else{
+    uint8_t* ptr = (uint8_t*)&val;
+    blekbd.press(ptr);
+  }
+}
+void blekbd_release_u32(uint32_t val){
+  if(val <= 0xffff){
+    blekbd.release(val);
+  }
+  else{
+    uint8_t* ptr = (uint8_t*)&val;
+    blekbd.release(ptr);
+  }
+}
+
 // ---------------- 键值表（都放在这里）----------------
 // 表编号 = 模式号：0 = default(常规键位)，1 = abcdef，2 = ascii，3 = periodic(元素周期表)
 // 值是 T-vK 库的写法：'a' 这类 ASCII 交给库里的 _asciimap（大写/符号自动带 Shift），
 // KEY_* 是非打印键（KEY_ESC=0xB1 这种）。USB 那边写的是 HID_KEY_*，**改表时两张表要一起改**。
-#if mode_chosen==mode_arrow
+#if mode_chosen==mode_arrow2x2
+// arrow 模式只有一张表
+static uint32_t keytable_arrow[ROWS][COLS] = {
+  {KEY_UP_ARROW  , KEY_RIGHT_ARROW},
+  {KEY_LEFT_ARROW, KEY_DOWN_ARROW }
+};
+
+static uint32_t* blekbd_table(int t){
+  (void)t;
+  return &keytable_arrow[0][0];
+}
+int blekbd_table_count(){
+  return 1;
+}
+const char* blekbd_table_name(int t){
+  (void)t;
+  return "arrow";
+}
+
+void blekbd_press(int x, int y)
+{
+  //if(y>1)return;
+  if(!blekbd_is_connected())return;
+
+  if( (x<0) || (x>=2) )return;
+  if( (y<0) || (y>=2) )return;
+  blekbd_press_u32(keytable_arrow[y][x]);
+  //blekbd.write('a');
+  //blekbd.print("haha");
+}
+void blekbd_release(int x, int y)
+{
+  //if(y>1)return;
+  if(!blekbd_is_connected())return;
+
+  if( (x<0) || (x>=2) )return;
+  if( (y<0) || (y>=2) )return;
+  blekbd_release_u32(keytable_arrow[y][x]);
+}
+
+#elif mode_chosen==mode_arrow4x4
+
 // arrow 模式只有一张表
 static uint32_t keytable_arrow[ROWS][COLS] = {
   {             0,               0, KEY_PAGE_UP, KEY_END      },
@@ -75,6 +266,39 @@ static uint32_t keytable_arrow[ROWS][COLS] = {
   {KEY_UP_ARROW  , KEY_RIGHT_ARROW,           0,             0},
   {KEY_LEFT_ARROW, KEY_DOWN_ARROW ,           0,             0}
 };
+static uint32_t* blekbd_table(int t){
+  (void)t;
+  return &keytable_arrow[0][0];
+}
+int blekbd_table_count(){
+  return 1;
+}
+const char* blekbd_table_name(int t){
+  (void)t;
+  return "arrow";
+}
+
+void blekbd_press(int x, int y)
+{
+  //if(y>1)return;
+  if(!blekbd_is_connected())return;
+
+  if( (x<0) || (x>=4) )return;
+  if( (y<0) || (y>=4) )return;
+  blekbd_press_u32(keytable_arrow[y][x]);
+  //blekbd.write('a');
+  //blekbd.print("haha");
+}
+void blekbd_release(int x, int y)
+{
+  //if(y>1)return;
+  if(!blekbd_is_connected())return;
+
+  if( (x<0) || (x>=4) )return;
+  if( (y<0) || (y>=4) )return;
+  blekbd_release_u32(keytable_arrow[y][x]);
+}
+
 #else
 static uint32_t keytable_default[ROWS][COLS] = {
   {0, MYKEY_MEDIA_VOLUME_UP  },
@@ -125,62 +349,34 @@ static char keytable_periodic[KBDSTR_ROWS][KBDSTR_COLS][KBDSTR_MAXLEN] = {
   {   "",   "",      "",   "",   "",   "",   "",   "",   "",   "",   "",   "",   "",   "",   "",   "",   "",   "" },   // 第8行（模式行）
 };
 
-#endif
-
-
-
-
-void blekbd_init()
-{
-  blekbd.begin();
-}
-void blekbd_exit()
-{
-}
-void blekbd_press_u32(uint32_t val){
-  if(val <= 0xffff){
-    blekbd.press(val);
-  }
-  else{
-    uint8_t* ptr = (uint8_t*)&val;
-    blekbd.press(ptr);
+// ---- 键值表读写（Web 改键用） ----
+// 表编号 = 模式号：0 = normal(常规键位)，1 = abcdef，2 = ascii，3 = periodic(元素周期表)。
+// 周期表是字符串表（见本文件末尾），所以 t=3 时这里没有 uint32_t 表（返回 nullptr）。
+// arrow 模式下只有一张表，编号固定为 0。
+static uint32_t* blekbd_table(int t){
+  switch(t){
+  case 0:
+    return &keytable_default[0][0];
+  case 1:
+    return &keytable_abcdef[0][0];
+  case 2:
+    return &keytable_ascii[0][0];
+  default:
+    return 0;   // 3 = 周期表，键值不在 uint32_t 表里
   }
 }
-void blekbd_release_u32(uint32_t val){
-  if(val <= 0xffff){
-    blekbd.release(val);
+int blekbd_table_count(){
+  return 4;
+}
+const char* blekbd_table_name(int t){
+  switch(t){
+  case 0: return "normal";
+  case 1: return "abcdef";
+  case 2: return "ascii";
+  case 3: return "periodic";
+  default: return "?";
   }
-  else{
-    uint8_t* ptr = (uint8_t*)&val;
-    blekbd.release(ptr);
-  }
 }
-
-
-#if mode_chosen==mode_arrow
-
-void blekbd_press(int x, int y)
-{
-  //if(y>1)return;
-  if(!blekbd_is_connected())return;
-
-  if( (x<0) || (x>=4) )return;
-  if( (y<0) || (y>=4) )return;
-  blekbd_press_u32(keytable_arrow[y][x]);
-  //blekbd.write('a');
-  //blekbd.print("haha");
-}
-void blekbd_release(int x, int y)
-{
-  //if(y>1)return;
-  if(!blekbd_is_connected())return;
-
-  if( (x<0) || (x>=4) )return;
-  if( (y<0) || (y>=4) )return;
-  blekbd_release_u32(keytable_arrow[y][x]);
-}
-
-#else
 
 // 8x18 下的模式：0=default(常规键位)，1=abcdef，2=ascii，3=periodic(元素周期表)。
 // 4 及以上按常规键位处理。周期表模式在这里自己把字符串入队，由 blekbd_type_poll() 慢慢发。
@@ -238,50 +434,7 @@ void blekbd_release(int x, int y)
 #endif
 
 
-// ---- 键值表读写（Web 改键用） ----
-// 表编号 = 模式号：0 = normal(常规键位)，1 = abcdef，2 = ascii，3 = periodic(元素周期表)。
-// 周期表是字符串表（见本文件末尾），所以 t=3 时这里没有 uint32_t 表（返回 nullptr）。
-// arrow 模式下只有一张表，编号固定为 0。
-static uint32_t* blekbd_table(int t){
-#if mode_chosen==mode_arrow
-  (void)t;
-  return &keytable_arrow[0][0];
-#else
-  switch(t){
-  case 0:
-    return &keytable_default[0][0];
-  case 1:
-    return &keytable_abcdef[0][0];
-  case 2:
-    return &keytable_ascii[0][0];
-  default:
-    return 0;   // 3 = 周期表，键值不在 uint32_t 表里
-  }
-#endif
-}
 
-int blekbd_table_count(){
-#if mode_chosen==mode_arrow
-  return 1;
-#else
-  return 4;
-#endif
-}
-
-const char* blekbd_table_name(int t){
-#if mode_chosen==mode_arrow
-  (void)t;
-  return "arrow";
-#else
-  switch(t){
-  case 0: return "normal";
-  case 1: return "abcdef";
-  case 2: return "ascii";
-  case 3: return "periodic";
-  default: return "?";
-  }
-#endif
-}
 
 // BleKeyboard 的键值编码（见 BleKeyboard::press(uint8_t)）：
 //   00          空位

@@ -8,7 +8,7 @@
 
 #include "mod_wifi.h"
 
-#include "mod_udp.h"
+#include "mod_socket.h"
 
 #include <USB.h>          // core 的 TinyUSB（USB/USBCDC）
 #include "mod_usb.h"     // 我们的 USB HID 模块
@@ -17,7 +17,10 @@ extern USBHIDKeyboard usbkbd;
 
 
 // 行/列脚数组：/gpio 页面也要读（所以不是 static，定义在本文件、声明在 mod_web.cpp）
-#if mode_chosen==mode_arrow
+#if mode_chosen==mode_arrow2x2
+byte rowPins[ROWS] = {PIN_KEY_Y0, PIN_KEY_Y1};
+byte colPins[COLS] = {PIN_XN2, PIN_XN1};
+#elif mode_chosen==mode_arrow4x4
 byte rowPins[ROWS] = {PIN_KEY_Y0, PIN_KEY_Y1, PIN_KEY_Y2, PIN_KEY_Y3};
 byte colPins[COLS] = {PIN_XN2, PIN_XN1, PIN_X0, PIN_X1};
 #else
@@ -153,6 +156,12 @@ void loop()
   //setled();
 
   check_keyboard();
+
+  //让步 1ms。按键的真正采样在 5ms 定时器 ISR 里（ontimer），这里只负责把
+  //ISR 记下的状态变化转成 onpress/onrelease，所以最多给"按下→发报文"多加
+  //1ms 延迟，手感无差别；换来的是 core1 的 IDLE1 能跑（不再 100% 空转，省电降温）。
+  //注意必须用 vTaskDelay：yield()/delay(0) 只让给同级及以上优先级，喂不到 idle。
+  vTaskDelay(1);
 }
 
 //this is nonrealtime/casual loop
@@ -201,6 +210,13 @@ void casualloop(void* param)
 
     blekbd_type_poll();
 #endif
+
+    //每轮必须真阻塞一次（1 tick = 1ms）。
+    //WebServer 在没有 client 时内部有 delay(1) 兜着，但一旦在处理 client，
+    //handleClient() 的等待路径只剩 yield()（HTTP_MAX_DATA_WAIT 那 5 秒），
+    //而 yield() 不会让 core0 的 IDLE0 跑——IDLE0 正是任务看门狗监视的对象，
+    //饿死 5 秒就是 reset=TASK_WDT。这一行是给 IDLE0 的固定让步，不能省。
+    vTaskDelay(1);
   }
 }
 
@@ -208,6 +224,8 @@ void setup()
 {
   //ws2812b
   initled();
+  //上电先全灯很暗的白（1/255），有个"活着"的样子；真正的自检流水灯在 setup 末尾
+  ws2812b_fill(WS2812B_DIM_RGB);
   //ws2812b_clear();
 
   //cdc+hid
@@ -256,4 +274,9 @@ void setup()
   //core1 loop: key
   //xTaskCreatePinnedToCore(casualloop, "core1 loop", 8192, NULL, 10, NULL, 1);
   //vTaskDelete(NULL);
+
+  //开机自检流水灯：按灯带顺序 0 → ROWS*COLS-1 逐个亮一下，跑完全灭。
+  //放最后是有意的——前面的初始化（USB/BLE/WiFi/矩阵定时器）都已经跑完了，
+  //这 2 秒左右只是灯在动；完了才进 loop()。
+  ws2812b_flow();
 }

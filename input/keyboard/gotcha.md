@@ -120,3 +120,151 @@ keyled.ino: 'USB' was not declared           (拿到的是自己的 usb.h)
 `#include_next` 会从副本绕回原件，内容走两遍，`#pragma once` 管不住 → 声明了 struct/class 的头文件必须再加传统
 include guard；② 自己包含 core 头文件时要用尖括号，引号形式会先在"本文件所在目录"里找，正好撞上同名文件。
 **重命名比这套绕法干净得多，遇到就当机立断改名。**
+
+## 13. `reset=TASK_WDT`：core0 的 IDLE0 被"饿死"，不是崩溃也不是内存
+
+编译期只有 **core0 的 idle 任务**在任务看门狗名单里（`CONFIG_ESP_TASK_WDT_CHECK_IDLE_TASK_CPU0=y`，
+CPU1 那条没开），超时 5s、`trigger_panic=y`；`loopTask` 默认**不在**名单里（要显式 `enableLoopWDT()`）。
+所以 `reset=TASK_WDT` 的含义很确定：**core0 上有任务连续 5 秒没让步，idle 一次都没跑**——
+跟 PANIC（崩溃）、BROWNOUT（供电）完全不是一类问题。
+
+本工程 core0 上只有协议栈（WiFi 驱动 / BT controller 都 pin 在 core0，优先级 23；esp_timer 22；lwIP 18）
+和我们的 `casualloop`（core0、优先级 1）。`loop()` + 矩阵扫描 ISR 在 core1
+（`CONFIG_ARDUINO_RUNNING_CORE=1`），core1 的 idle 不在名单里——**但别把这当设计依据**，那只是编译配置的巧合。
+
+踩到的两条自旋路径，都在 arduino `WebServer` / `Stream` **内部**，我们的代码插不进去让步：
+
+1. `WebServer::handleClient()`：client 连上但没数据时走 `keepCurrentClient=true; callYield=true;`，
+   窗口是 `HTTP_MAX_DATA_WAIT = 5000` ms，结尾只调 `yield()`；而 `yield()` 就是 `vPortYield()`，
+   **只让给同级及以上优先级，永远不会让 IDLE0 跑**。
+2. `_parseRequest()` → `Stream::readStringUntil()` → `Stream::timedRead()`：**纯忙等，连 `yield()` 都没有**，
+   超时是 `setTimeout(HTTP_MAX_SEND_WAIT) = 5000` ms。请求只发一半（安卓省电、探测器那种半死连接）就卡满 5 秒。
+   **这条在单次 `handleClient()` 调用内部**，所以"循环末尾加 delay"救不了它。
+
+顺带一个坑：`NetworkClient::connected()` 收到 FIN（对端正常关闭，`res == 0`）仍返回 `true`
+（落到 `default:` 分支），所以浏览器关了连接，上面那个 5 秒窗口也不会提前结束，只能等 accept+5s 超时。
+
+经验规则：
+
+- 常驻轮询任务每轮**必须** `vTaskDelay(1)`（≥1 tick）；**`yield()` / `delay(0)` 不算让步**。
+  本工程 tick = 1ms（`CONFIG_FREERTOS_HZ=1000`）所以 `delay(1)` 也等于 1 tick，但别依赖 tick 率。
+- 网页请求处理完就 `server.client().stop()`，别等对端 FIN（见上一条）。
+- 想在保留 5s 看门狗的前提下根治路径 2，只能让 web 轮询跑在 **core1**（core1 的 idle 不在名单里）。
+  `disableCore0WDT()` 也能立刻不炸，但那是拆安全网，本工程明确不用。
+- 诊断手法：`handleClient()` 前后打 `millis()`（能看到 1~5s 的单次调用）；
+  `xPortGetCoreID()` 确认谁在哪个核；IDF 的 panic 原文（"Task watchdog got triggered … IDLE0 (CPU 0)"）
+  在本机**看不到**——USB 口被 TinyUSB 占了、`Serial`(HWCDC) 又没 begin，想看得接 UART0 或自己落 RTC。
+  上游同类 issue：<https://github.com/espressif/arduino-esp32/issues/12788>。
+
+## 14. AP 的 ssid/密码存 EEPROM：保存前必须校验，否则会把自己锁在外面
+
+`/wifistat` 现在能改热点（AP）的 ssid/密码，值存在 EEPROM 里（`mod_eeprom.cpp` 的
+`apssidpass_save/load`，slot 256/384，紧挨着 sta 的 0/128），启动时 `wifi_init()` 用 EEPROM 的值覆盖
+`mod_wifi.cpp` 里的默认值 `esp32s3_keyboard` / `12345678`。
+
+坑点在于：**AP 起不来 = 你也进不去网页**（没有第二个入口，除非 STA 那边正好连着路由，或者接串口）。
+
+- 所以 `wifi_ap_cred_valid()` 在**写盘之前**拦一道：ssid 1–31 字节；pass 留空（开放热点）
+  或 8–63 字节（WPA2 最短 8）。不合法就 400 + 提示，一个字节都不写。
+  （core 的 `APClass::create()` 只拒绝 pass<8，ssid/pass 超长是**静默截断**，还让 `ssid_len` 和数组对不上，
+  所以 31/63 这两个上限必须我们自己把关。）
+- `wifi_init()` 读回 EEPROM 之后再校验一次：万一存的是老版本/写坏的值，就**回退到默认值**并打日志，
+  绝不让设备以"起不来的 AP"启动。
+- `/stasave`（sta）和 `/apsave`（ap）是**两个独立端点**，页面上 sta / ap 各一张卡片（`.card`），
+  卡片里各有自己的表单和 Save 按钮：改一边不会碰到另一边的值。`/wifisave` 还留着当别名（指向 sta），
+  给手机缓存的旧页面兜底。两个 handler 里都用 `server.hasArg(...)` 兜底——字段缺失就沿用当前值，
+  别当成"清空"。
+- 改完 AP 密码重启后，手机要用新密码重连；旧配置会一直连不上，先在手机上"忘记网络"再连。
+
+### EEPROM 布局改顺序 = 一定要带版本号迁移
+
+布局是 sta_ssid(0) / sta_pass(128) / ap_ssid(256) / ap_pass(384) / udp_ipv4(512) / udp_port(640)，
+版本号写在 768。**动 slot 顺序或含义时必须把 `KBD_EEPROM_LAYOUT` +1**，`eeprom_migrate()`
+（在 `eeprom_open()` 里调用）会在版本不匹配时把"含义变了"的 ap/udp 四个 slot 清成 0xFF，
+只保住 0/128 的 sta 配置。
+
+为什么非要清：v1 布局里 256/384 放的是 udp 的 ip/port，直接让它们变成 ap 的 ssid/pass 的话，
+老的 udp ip（比如 `192.168.5.217`，15 字节、是合法 ssid）会被当成 AP 的 ssid；如果旧 port 的字节恰好以
+`0x00` 开头（比如 port=256），384 会读成"空 pass" → 合法 → **热点被静默改名成那个 IP、还变成开放网络**。
+这种"数据还在、含义变了"的坑只能靠版本号一次性迁移解决，读取时再校验也兜不住。
+
+扩容本身是安全的：core 的 `EEPROMClass::begin()` 就是 NVS 里的一个 blob，扩容时先
+`memset(..., 0xFF)` 再回填老数据，新增区域读出来就是"未写入"（`slot_load()` 会拒绝）。
+
+## 15. BLE 广播名 / 配对码：`setName` 要在 `begin()` 前，安全参数要在 `begin()` 后
+
+`/bt` 页面现在能改广播名和配对码（存 EEPROM：名字 slot @896、配对码 @772）。三个顺序坑：
+
+1. **广播名必须在 `blekbd.begin()` 之前设**：库的 `begin()` 里是 `BLEDevice::init(String(deviceName.c_str()))`，
+   而 `setName()` 只是给 `deviceName` 赋值，`begin()` 之后再设就白设了。
+2. **配对码的安全参数必须在 `begin()` 之后设**：`BLEDevice::init()` 会先把
+   `sm_io_cap` 复位成 `NO_INPUT_OUTPUT`、`sm_bonding/mitm` 清零，接着库的 `begin()` 只调
+   `setAuthenticationMode(ESP_LE_AUTH_BOND)`（bonding=1、**mitm=0**）——mitm=0 就永远不会弹配对码。
+   所以要在 `begin()` 返回后覆盖：
+   ```c
+   BLESecurity::setPassKey(true, pin);                    // 静态码
+   BLESecurity::setCapability(BLE_HS_IO_DISPLAY_ONLY);    // 本机"显示"，手机端输入
+   BLESecurity::setAuthenticationMode(true, true, true);  // bonding + mitm + SC
+   ```
+   注意 `USE_NIMBLE` 在这个库的 `BleKeyboard.h` 里是**注释掉的**，所以它走 Bluedroid 分支；
+   而 core 3.x 的 `BLESecurity` 在 NimBLE 下只在 `setCapability`/`setAuthenticationMode` 里直接写
+   `ble_hs_cfg.*`，`setPassKey()` 的驱动调用被 `#if defined(CONFIG_BLUEDROID_ENABLED)` 包着、**不生效**——
+   它只是把码存进静态成员，靠 core `BLEServer.cpp` 里 `BLE_SM_IOACT_DISP` 分支调
+   `BLESecurity::getPassKey()` 用 `ble_sm_inject_io()` 注入。**别自己去找 `esp_ble_gap_set_security_param`**，
+   那些 Bluedroid 符号在这个 build 里根本不存在（也正因为被 `#if` 包着才编得过）。
+3. **改了名字/配对码必须清本机绑定**（`ble_store_clear()`，包在 `blekbd_forget_bonds()` 里）：
+   双方都存着老密钥时手机会直接复用老绑定，新配对码根本不弹，表现就是"设了码但没用"。
+   清了之后手机那边可能还留着老记录，必要时在手机上"忘记此设备"再配对。
+
+另一个不是 BLE 的坑：**有输入框的页面不能自动刷新**。`/bt` 原来是 3 秒 `<meta refresh>`，
+加了 name/passkey 输入框之后只能去掉（否则每 3 秒把没保存的输入冲掉），改成手动重载，和 `/wifistat` 一样。
+
+## 16. WiFi 那几个"看起来是全局、其实是按接口"的属性
+
+做 `/wifistat` 的 status 卡时踩到的，判据是"这东西属于整颗射频/整栈，还是属于某个接口"：
+
+- **`channel` 算共有**：AP+STA 时 IDF 会把 AP 拉到 STA 连上的那个信道，整颗射频只有一个当前信道
+  （`esp_wifi_get_channel(&primary, &second)`）。所以"热点怎么自己换信道了"不是 bug。
+- **`txpower` 算共有**：arduino 的 `WiFi.getTxPower()` 用的是无接口参数的 `esp_wifi_get_max_tx_power()`。
+  坑在单位：它是 **0.25dBm 为单位**（`WIFI_POWER_19_5dBm = 78` → 19.5dBm），直接当 dBm 用会差 4 倍。
+- **`hostname` 算共有**：arduino 3.x 把它放在 `NetworkManager` 里（`WiFi.getHostname()`），
+  哪个 netif 起来就套哪个，默认 `esp32s3-XXXXXX`（XXXXXX 取 MAC 后 3 字节）。
+- **`MAC` 不算共有**：STA/AP 各有自己的 MAC（AP 的通常是 STA+1），分别放各自卡片。
+  读的时候用 `esp_wifi_get_mac(WIFI_IF_STA/AP, mac)`，**别用 `WiFi.macAddress()`**——
+  那个在接口没起来（比如 sta ssid 留空、根本没 begin()）时返回空。
+- **`sleep`/省电不算共有**：`esp_wifi_set_ps` 是 station 概念（AP 不睡），arduino 的 `getSleep()`
+  还只是它自己的软件标志。
+- **`bandwidth`/`protocol`/promiscuous 是按接口的**：IDF 里都是 `esp_wifi_xxx(ifx, …)` 形式。
+- 想做但拿不到：lwIP 的 pbuf/内存统计（`CONFIG_LWIP_STATS` 没开，预编译 libs 改不了）、
+  coex 偏好（只有 setter，没 getter）。
+
+## 17. socket 三目标的约定：留空 = 不启用（不是独立开关）
+
+`/socketstate`（原 `/udpstat`）把对外通道拆成 udp / tcp / ws 三张卡片，各一个 Set 按钮。
+"启用"是**从配置推导**的：udp/tcp 要 ipv4 + port 都在（port 1-65535），ws 要 url 非空；
+没有单独的 enable 标志位 —— 所以**清空即关闭**，别指望留个开关下次还能开回来。
+
+- 校验（`mod_socket.cpp` 的 `socket_ipv4_check` / `socket_port_check` / `socket_wsurl_check`）：
+  空值一律合法；ipv4 必须是 a.b.c.d（有 DNS 也不解析，主机名不收）；port 纯数字且 1-65535；
+  url 只收可打印 ASCII、≤127 字节、必须带 `scheme://host`。
+- 保存是**立即生效**（不重启）：udp 是每次发包才读全局变量，所以改完下一个按键就用新目标；
+  tcp/ws 现在只有配置没有发送。
+- EEPROM 为此从 1024B 扩到 **2048B**（TCP 目标 1024/1152、ws url 1156）：扩容只是往 0xFF 的空白区加字段，
+  老偏移一个没动，**不需要提升 `KBD_EEPROM_LAYOUT`**；新区域读出来是"未写入"，所以升级后默认就是"不启用"。
+- 命名提醒：这页的 **ws = WebSocket**，和灯带那个 `ws2812b` 页完全无关（卡片标题写成 `ws (websocket)`）。
+
+## 18. 移动/重命名 sketch 文件后，`--build-path` 必须清掉重建
+
+arduino-cli 会把 sketch 复制到 `<build-path>/sketch/` 再编译，而且**只复制、不清理已经消失的文件**。
+所以 `mod_udp.cpp` → `mod_socket.cpp` 这种改名之后，旧副本还留着，链接期直接炸：
+
+```
+multiple definition of `udp'; mod_udp.cpp.o: ... first defined here (mod_socket.cpp.o)
+```
+
+**做法**：改文件名之后先 `rm -rf <build-path>` 再编（本工程用的是 `/tmp/kbd_realbuild`）。
+项目内没有 `build/` 目录，所以这条只影响手工编译/脚本，不影响 IDE 的"验证/上传"（IDE 自己会重扫 sketch）。
+
+顺带一条更常见的：**每个 .cpp 都要 `#include` 自己的头文件**。这次把 EEPROM 布局宏从 .cpp 挪到
+`mod_eeprom.h` 之后，`mod_eeprom.cpp` 因为原来没包含自己的头文件，一堆 `KBD_EE_*` 全部 "not declared"。
+包含自己的头文件能让这类"宏/声明放错地方"在编译期就暴露，不会等到别的模块引用时才发现。
